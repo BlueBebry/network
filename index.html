@@ -15,10 +15,7 @@
     </style>
 </head>
 <body>
-    <div class="status">
-        Статус: <span id="netStatus" style="color: red;">ОФФЛАЙН</span> 
-        (Пиров: <span id="peerCount">0</span>)
-    </div>
+    
     <div id="auth" class="box">
         <h3>Войти в Web3</h3>
         <input id="alias" placeholder="Логин">
@@ -29,6 +26,10 @@
     </div>
 
     <div id="app" class="box" style="display:none">
+            <div class="status">
+            Статус: <span id="netStatus" style="color: red;">ОФФЛАЙН</span> 
+            (Пиров: <span id="peerCount">0</span>)
+        </div>
         <h3 id="userTitle"></h3>
         <div class="status">Статус: <span id="netStatus">Подключение...</span></div>
         <input id="content" placeholder="Что нового?">
