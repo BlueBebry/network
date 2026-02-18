@@ -34,56 +34,71 @@
     </div>
 
     <script>
-        // Используем список стабильных узлов
         const gun = Gun([
             'https://gun-manhattan.herokuapp.com/gun',
             'https://peer.wall.gl/gun'
         ]);
         const user = gun.user().recall({storage: true});
 
-        // Следим за статусом сети
-        gun.on('hi', () => document.getElementById('netStatus').innerText = 'Онлайн (Peer connected)');
-        
+        // Функция для обновления интерфейса
+        function updateUI() {
+            if (user.is) {
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('userTitle').innerText = "Вы в сети как: " + user.is.alias;
+                loadMessages();
+            }
+        }
+
         // Регистрация
         async function signUp() {
-            user.create(document.getElementById('alias').value, document.getElementById('pass').value, (ack) => {
-                if (ack.err) alert(ack.err);
-                else signIn();
+            const alias = document.getElementById('alias').value;
+            const pass = document.getElementById('pass').value;
+            user.create(alias, pass, (ack) => {
+                if (ack.err) {
+                    alert("Ошибка регистрации: " + ack.err);
+                } else {
+                    alert("Аккаунт создан! Теперь нажмите 'Войти'");
+                }
             });
         }
 
         // Вход
         function signIn() {
-            user.auth(document.getElementById('alias').value, document.getElementById('pass').value, (ack) => {
-                if (ack.err) alert(ack.err);
-                else location.reload(); // Перезагружаем для активации recall
+            const alias = document.getElementById('alias').value;
+            const pass = document.getElementById('pass').value;
+            user.auth(alias, pass, (ack) => {
+                if (ack.err) {
+                    alert("Ошибка входа: " + ack.err);
+                } else {
+                    console.log("Авторизация успешна!");
+                    updateUI(); // Показываем чат без перезагрузки
+                }
             });
         }
 
-        // Если залогинены - показываем интерфейс
-        if (user.is) {
-            document.getElementById('auth').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            document.getElementById('userTitle').innerText = "Вы: " + user.is.alias;
-            
-            // Загрузка сообщений из глобальной сети
-            gun.get('shared-web3-feed-v2').map().on((data, id) => {
+        // Загрузка сообщений
+        function loadMessages() {
+            gun.get('shared-web3-feed-v3').map().on((data, id) => {
                 if (!data || !data.text) return;
-                const li = document.createElement('li');
-                li.id = id;
-                li.innerHTML = `<strong>${data.from}:</strong> ${data.text}`;
-                const list = document.getElementById('messages');
-                if (!document.getElementById(id)) list.prepend(li);
+                // Проверяем, нет ли уже такого сообщения на экране
+                if (!document.getElementById(id)) {
+                    const li = document.createElement('li');
+                    li.id = id;
+                    li.innerHTML = `<strong>${data.from}:</strong> ${data.text}`;
+                    document.getElementById('messages').prepend(li);
+                }
             });
         }
 
-        // Отправка
+        // Проверяем статус при загрузке
+        updateUI();
+
         function send() {
             const text = document.getElementById('content').value;
-            if (!text) return;
+            if (!text || !user.is) return;
             
-            // Публикуем данные
-            gun.get('shared-web3-feed-v2').set({
+            gun.get('shared-web3-feed-v3').set({
                 text: text,
                 from: user.is.alias,
                 time: Date.now()
