@@ -104,49 +104,58 @@
         }, 2000);
 
         // ВХОД / РЕГИСТРАЦИЯ
-        // ОБНОВЛЕННАЯ РЕГИСТРАЦИЯ
-        async function register() {
-            const alias = document.getElementById('regAlias').value;
-            const pass = document.getElementById('regPass').value;
-            
-            if (alias.length < 3) return alert("Логин слишком короткий");
-
-            // Принудительно выходим из старых сессий перед созданием нового
-            user.leave(); 
-            
-            user.create(alias, pass, (ack) => {
-                if (ack.err) {
-                    alert("Ошибка регистрации: " + ack.err);
-                } else {
-                    alert("Аккаунт " + alias + " создан! Теперь попробуйте войти.");
-                    toggleAuth(); // Переключаем на форму входа
-                }
-            });
-        }
-
-        // ОБНОВЛЕННЫЙ ВХОД
+        // Функция для входа (теперь с принудительным выходом перед попыткой)
         async function login() {
             const alias = document.getElementById('loginAlias').value;
             const pass = document.getElementById('loginPass').value;
 
-            // Сначала пробуем просто войти
+            if (!alias || !pass) return alert("Введите логин и пароль");
+
+            // 1. Сначала полностью выходим, чтобы очистить память Gun
+            user.leave(); 
+
+            // 2. Пробуем войти
             user.auth(alias, pass, (ack) => {
                 if (ack.err) {
-                    console.error(ack.err);
-                    alert("Ошибка входа: " + ack.err + "\n\nПопробуйте создать новый аккаунт с другим логином, если этот не создался.");
+                    console.error("Ошибка Gun:", ack.err);
+                    alert("Не удалось войти: " + ack.err);
                 } else {
-                    console.log("Успешный вход!");
-                    location.reload(); // Перезагружаем, чтобы сработал user.is
+                    console.log("Успешный вход за:", alias);
+                    // Важно: даем Gun секунду записать ключи в хранилище и обновляем
+                    setTimeout(() => { location.reload(); }, 500);
                 }
             });
         }
 
-        if (user.is) {
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('userSection').classList.remove('hidden');
-            document.getElementById('welcomeMsg').innerText = `Привет, ${user.is.alias}!`;
-            showFeed();
+        // Функция для регистрации
+        async function register() {
+            const alias = document.getElementById('regAlias').value;
+            const pass = document.getElementById('regPass').value;
+
+            if (alias.length < 3 || pass.length < 6) {
+                return alert("Логин от 3 символов, пароль от 6 символов!");
+            }
+
+            user.create(alias, pass, (ack) => {
+                if (ack.err) {
+                    alert("Ошибка регистрации: " + ack.err);
+                } else {
+                    alert("Аккаунт создан! Теперь введите данные и нажмите 'Войти'");
+                    toggleAuth(); // Переключаем на вход
+                }
+            });
         }
+
+        // Проверка авторизации при загрузке (убедись, что это есть в коде)
+        user.recall({storage: true}, (ack) => {
+            if (user.is) {
+                console.log("Сессия восстановлена:", user.is.alias);
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('userSection').classList.remove('hidden');
+                document.getElementById('welcomeMsg').innerText = `Привет, ${user.is.alias}!`;
+                showFeed(); // запускаем ленту
+            }
+        });
 
         // ЛЕНТА (POSTS)
         function sendPost() {
