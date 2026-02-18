@@ -15,7 +15,10 @@
     </style>
 </head>
 <body>
-
+    <div class="status">
+        Статус: <span id="netStatus" style="color: red;">ОФФЛАЙН</span> 
+        (Пиров: <span id="peerCount">0</span>)
+    </div>
     <div id="auth" class="box">
         <h3>Войти в Web3</h3>
         <input id="alias" placeholder="Логин">
@@ -33,14 +36,34 @@
         <ul id="messages"></ul>
     </div>
 
+
     <script>
     // Добавляем еще больше узлов для надежности
-    const gun = Gun([
-        'https://gun-us.herokuapp.com/gun',
-        'https://gun-eu.herokuapp.com/gun'
-    ]);
+    const gun = Gun({
+        peers: [
+            'https://gun-manhattan.herokuapp.com/gun',
+            'https://peer.wall.gl/gun'
+        ],
+        localStorage: false // Отключим локальное хранилище для теста, чтобы видеть только РЕАЛЬНУЮ сеть
+    });
 
-    const user = gun.user().recall({storage: true});
+    const user = gun.user();
+
+    // Каждую секунду проверяем, сколько у нас живых соединений
+    setInterval(() => {
+        const peers = Object.keys(gun._.opt.peers).filter(url => {
+            return gun._.opt.peers[url].wire && gun._.opt.peers[url].wire.readyState === 1;
+        });
+        document.getElementById('peerCount').innerText = peers.length;
+        if (peers.length > 0) {
+            document.getElementById('netStatus').innerText = 'ОНЛАЙН';
+            document.getElementById('netStatus').style.color = 'green';
+        } else {
+            document.getElementById('netStatus').innerText = 'ОФФЛАЙН (ищу узлы...)';
+            document.getElementById('netStatus').style.color = 'red';
+        }
+    }, 2000);
+
     const chatNode = gun.get('my-private-network-test-999'); // Новая чистая комната
 
     function updateUI() {
