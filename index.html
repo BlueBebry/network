@@ -123,7 +123,18 @@
         function sendPost() {
             const val = document.getElementById('postContent').value;
             if (!val) return;
-            globalFeed.set({ username: user.is.alias, content: val, time: Date.now() });
+            
+            // Генерируем уникальный ID для поста сами
+            const postId = Gun.text.random(16);
+            
+            // Публикуем в ленту по конкретному ключу
+            globalFeed.get(postId).put({
+                username: user.is.alias,
+                content: val,
+                time: Date.now(),
+                id: postId // сохраняем id внутри для удобства
+            });
+            
             document.getElementById('postContent').value = '';
         }
         function showFeed() {
@@ -133,27 +144,21 @@
             const feedEl = document.getElementById('feed');
             feedEl.classList.remove('hidden');
             feedEl.innerHTML = '';
+
             globalFeed.map().on((data, id) => {
-                if (!data) { const el = document.getElementById(id); if (el) el.remove(); return; }
-                if (data.content) renderPost(data, id);
+                const el = document.getElementById(id);
+                
+                // Если данных нет (null) или контент пустой — удаляем из верстки
+                if (!data || data.content === null || data === null) {
+                    if (el) el.remove();
+                    return;
+                }
+                
+                // Если пост есть — рисуем
+                if (data.content) {
+                    renderPost(data, id);
+                }
             });
-        }
-        function renderPost(p, id) {
-            if (document.getElementById(id)) return;
-            const feed = document.getElementById('feed');
-            if (!feed) return;
-            const isMe = user.is && user.is.alias === p.username;
-            const html = `<div class="post card" id="${id}">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="display:flex; align-items:center;">
-                        <div class="avatar" style="background:${getAvatarColor(p.username)}">${p.username[0]}</div>
-                        <strong>${p.username}</strong>
-                    </div>
-                    ${isMe ? `<button onclick="deletePost('${id}')" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:0.75em;">Удалить</button>` : ''}
-                </div>
-                <p style="padding-left:52px; margin:0;">${p.content}</p>
-            </div>`;
-            feed.insertAdjacentHTML('afterbegin', html);
         }
 
         // CHAT & TYPING
@@ -206,12 +211,16 @@
         function logout() { user.leave(); location.reload(); }
         function showChats() { hideAll(); document.getElementById('chatsListSection').classList.remove('hidden'); }
         function showMyProfile() { alert("Ваш ник: " + user.is.alias); }
-        function deletePost(id) { if (confirm('Удалить?')) globalFeed.get(id).put(null); }
-        setInterval(() => {
-            const p = Object.values(gun._.opt.peers).filter(x => x.wire && x.wire.readyState === 1);
-            document.getElementById('peerCount').innerText = p.length;
-            document.getElementById('netStatus').innerText = p.length > 0 ? "ОНЛАЙН" : "ПОИСК...";
-        }, 2000);
+        function deletePost(id) {
+            if (!confirm('Удалить этот пост?')) return;
+            
+            // Записываем null по конкретному адресу поста
+            globalFeed.get(id).put(null);
+            
+            // Для надежности сразу скрываем из DOM
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
     </script>
 </body>
 </html>
