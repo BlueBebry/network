@@ -239,6 +239,13 @@
             const el = document.getElementById(id);
             if (el) el.remove();
         }
+        setInterval(() => {
+            if (gun && gun._ && gun._.opt && gun._.opt.peers) {
+                const peers = Object.values(gun._.opt.peers).filter(p => p.wire && p.wire.readyState === 1);
+                document.getElementById('peerCount').innerText = peers.length;
+                document.getElementById('netStatus').innerText = peers.length > 0 ? "ОНЛАЙН" : "ПОИСК...";
+            }
+        }, 2000);
     </script>
 </body>
 </html>
