@@ -196,6 +196,23 @@
             currentRoom.get('typing').get(user.is.alias).put(false);
             input.value = '';
         }
+        function renderPost(p, id) {
+            if (document.getElementById(id)) return;
+            const feed = document.getElementById('feed');
+            if (!feed) return;
+            const isMe = user.is && user.is.alias === p.username;
+            const html = `<div class="post card" id="${id}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center;">
+                        <div class="avatar" style="background:${getAvatarColor(p.username)}">${p.username[0]}</div>
+                        <strong>${p.username}</strong>
+                    </div>
+                    ${isMe ? `<button onclick="deletePost('${id}')" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:0.75em;">Удалить</button>` : ''}
+                </div>
+                <p style="padding-left:52px; margin:0;">${p.content}</p>
+            </div>`;
+            feed.insertAdjacentHTML('afterbegin', html);
+        }
         function renderMsg(m, id) {
             const h = document.getElementById('chatHistory');
             const isMe = m.sender === user.is.alias;
