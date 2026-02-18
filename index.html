@@ -21,7 +21,10 @@
 
     <script>
         // Инициализируем Gun и подключаемся к публичному узлу-посреднику
-        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+        const gun = Gun([
+            'https://gun-manhattan.herokuapp.com/gun',
+            'https://gun-relay.herokuapp.com/gun'
+        ]);
         const mesh = gun.get('our-shared-social-network-v1');
 
         // Отправка сообщения
