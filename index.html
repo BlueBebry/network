@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     
     <style>
-        /* Весь твой оригинальный CSS без изменений */
         body { font-family: 'Inter', sans-serif; max-width: 800px; margin: 20px auto; background: #f3f4f6; color: #1f2937; padding: 10px; line-height: 1.5; }
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
         .post { background: white; padding: 15px; margin-bottom: 15px; border-radius: 16px; border-left: 6px solid #4f46e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s ease; }
@@ -91,20 +90,16 @@
     </div>
 
     <script>
-        // ИНИЦИАЛИЗАЦИЯ
         const gun = Gun({ peers: ['https://my-p2p-relay.onrender.com/gun'] });
         const user = gun.user().recall({storage: true});
-        const globalFeed = gun.get('my-p2p-social-feed-v1');
+        const globalFeed = gun.get('my-p2p-social-feed-v1'); // Возвращаем оригинальное имя ленты
         let currentRoom = null;
         let typingTimeout;
 
         // ПЕЧАТАЕТ... (ОТПРАВКА)
         function handleTyping() {
             if (!currentRoom || !user.is) return;
-            
-            // Записываем в Gun, что мы активны
             currentRoom.get('typing').get(user.is.alias).put(true);
-
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => {
                 currentRoom.get('typing').get(user.is.alias).put(false);
@@ -114,27 +109,18 @@
         // ПЕЧАТАЕТ... (ПРИЕМ)
         function listenTyping(roomName) {
             const indicator = document.getElementById('typingIndicator');
-            const room = gun.get('room-' + roomName);
-            
-            room.get('typing').map().on((isTyping, alias) => {
+            gun.get('room-' + roomName).get('typing').map().on((isTyping, alias) => {
                 if (!user.is || alias === user.is.alias) return;
-                
-                if (isTyping === true) {
-                    indicator.innerText = alias + " печатает...";
-                } else {
-                    indicator.innerText = "";
-                }
+                indicator.innerText = isTyping ? alias + " печатает..." : "";
             });
         }
 
-        // МОНИТОРИНГ СЕТИ
         setInterval(() => {
             const peers = Object.values(gun._.opt.peers).filter(p => p.wire && p.wire.readyState === 1);
             document.getElementById('peerCount').innerText = peers.length;
             document.getElementById('netStatus').innerText = peers.length > 0 ? "ОНЛАЙН" : "ПОИСК...";
         }, 2000);
 
-        // ВХОД
         async function login() {
             const alias = document.getElementById('loginAlias').value;
             const pass = document.getElementById('loginPass').value;
@@ -146,7 +132,6 @@
             });
         }
 
-        // РЕГИСТРАЦИЯ
         async function register() {
             const alias = document.getElementById('regAlias').value;
             const pass = document.getElementById('regPass').value;
@@ -166,7 +151,6 @@
             showFeed();
         }
 
-        // ЛЕНТА
         function sendPost() {
             const content = document.getElementById('postContent').value;
             if (!content) return;
@@ -202,18 +186,17 @@
             document.getElementById('feed').insertAdjacentHTML('afterbegin', postHtml);
         }
 
-        // ЧАТ
         function openChat(roomName) {
             if(!roomName) return alert("Введите название комнаты");
             hideAll();
             document.getElementById('activeChatSection').classList.remove('hidden');
             document.getElementById('chatTitle').innerText = `Комната: ${roomName}`;
             document.getElementById('chatHistory').innerHTML = '';
-            document.getElementById('typingIndicator').innerText = '';
             
             currentRoom = gun.get('room-' + roomName);
-            currentRoom.get('messages').map().on((data, id) => {
-                if (!data || !data.content || document.getElementById(id)) return;
+            // УБРАЛИ .get('messages'), вернулись к старому пути данных
+            currentRoom.map().on((data, id) => {
+                if (!data || !data.content || id === 'typing' || document.getElementById(id)) return;
                 renderMsg(data, id);
             });
             listenTyping(roomName);
@@ -234,17 +217,15 @@
         function sendMessage() {
             const input = document.getElementById('msgContent');
             if (!input.value || !currentRoom) return;
-            currentRoom.get('messages').set({
+            currentRoom.set({
                 sender: user.is.alias,
                 content: input.value,
                 time: Date.now()
             });
-            // Сбрасываем статус печати сразу после отправки
             currentRoom.get('typing').get(user.is.alias).put(false);
             input.value = '';
         }
 
-        // ВСПОМОГАТЕЛЬНОЕ
         function hideAll() {
             ['postFormCard', 'feed', 'chatsListSection', 'activeChatSection'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
