@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,126 +9,137 @@
     <style>
         body { font-family: 'Inter', sans-serif; padding: 20px; background: #f3f4f6; max-width: 500px; margin: auto; }
         .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid #ddd; }
-        button { width: 100%; padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; }
         button:hover { opacity: 0.9; }
-        #messages { list-style: none; padding: 0; }
-        li { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #4f46e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .status-bar { font-size: 0.8em; color: #666; margin-bottom: 15px; padding: 10px; background: #eee; border-radius: 8px; }
-        .nick { font-weight: bold; color: #4f46e5; }
-        .time { font-size: 0.7em; color: #999; }
+        #messages { list-style: none; padding: 0; margin-top: 20px; }
+        li { background: white; padding: 12px; margin-bottom: 12px; border-radius: 8px; border-left: 4px solid #4f46e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .status-container { font-size: 0.85em; color: #444; background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb; }
+        .nick { font-weight: bold; color: #4f46e5; margin-bottom: 4px; }
+        .msg-text { word-wrap: break-word; }
+        .time { font-size: 0.75em; color: #999; margin-top: 6px; }
     </style>
 </head>
 <body>
 
-    <div class="status-bar">
-        Статус: <span id="netStatus" style="color: red;">ОФФЛАЙН (ищу узлы...)</span> 
-        <br>Активных соединений: <span id="peerCount">0</span>
+    <div class="status-container">
+        <b>Сеть:</b> <span id="netStatus" style="color: orange;">Инициализация...</span><br>
+        <b>Пиры:</b> <span id="peerCount">0</span>
     </div>
 
-    <div id="auth" class="box">
-        <h3>Войти в Web3</h3>
-        <input id="alias" placeholder="Логин">
-        <input id="pass" type="password" placeholder="Пароль">
-        <button onclick="signUp()">Создать аккаунт</button>
-        <button onclick="signIn()" style="background:#10b981">Войти</button>
-        <p style="font-size: 0.7em; color: #888; margin-top: 10px;">* Пароль генерирует ваш уникальный ключ. Его нельзя восстановить!</p>
+    <div id="auth-screen" class="box">
+        <h3>Вход в систему</h3>
+        <input id="alias" placeholder="Ваш логин">
+        <input id="pass" type="password" placeholder="Ваш пароль">
+        <button onclick="signUp()">Создать новый аккаунт</button>
+        <button onclick="signIn()" style="background:#10b981">Войти в чат</button>
     </div>
 
-    <div id="app" class="box" style="display:none">
-        <h3 id="userTitle">Загрузка профиля...</h3>
-        <input id="content" placeholder="Что нового?">
-        <button onclick="send()">Опубликовать в P2P</button>
+    <div id="chat-screen" class="box" style="display:none">
+        <h3 id="userDisplay">Вы в сети</h3>
+        <input id="msgInput" placeholder="Введите сообщение...">
+        <button onclick="sendMsg()">Отправить в P2P</button>
         <ul id="messages"></ul>
     </div>
 
     <script>
-        // 1. Инициализация Gun (только один раз!)
+        // Настройка GUN
+        const RELAY_URL = 'https://my-p2p-relay.onrender.com/gun';
         const gun = Gun({
-            peers: ['https://my-p2p-relay.onrender.com/gun']
+            peers: [RELAY_URL]
         });
-        
+
         const user = gun.user().recall({storage: true});
-        const chatNode = gun.get('my-private-network-test-999');
+        const room = gun.get('my-private-network-final-v1');
 
-        // 2. Мониторинг сети
+        // Мониторинг сети (исправлено)
         setInterval(() => {
-            const peers = Object.values(gun._.opt.peers).filter(p => p.wire && p.wire.readyState === 1);
-            const statusEl = document.getElementById('netStatus');
-            const countEl = document.getElementById('peerCount');
+            const peers = gun._.opt.peers;
+            let active = 0;
             
-            countEl.innerText = peers.length;
-            if (peers.length > 0) {
-                statusEl.innerText = 'ОНЛАЙН';
-                statusEl.style.color = 'green';
-            } else {
-                statusEl.innerText = 'ОФФЛАЙН (ищу узлы...)';
-                statusEl.style.color = 'red';
-            }
-        }, 1000);
+            Object.keys(peers).forEach(id => {
+                if (peers[id].wire && peers[id].wire.readyState === 1) active++;
+            });
 
-        // 3. Обновление интерфейса
-        function updateUI() {
+            const statusText = document.getElementById('netStatus');
+            document.getElementById('peerCount').innerText = active;
+
+            if (active > 0) {
+                statusText.innerText = "ОНЛАЙН";
+                statusText.style.color = "green";
+            } else {
+                statusText.innerText = "ОФФЛАЙН (поиск...)";
+                statusText.style.color = "red";
+            }
+        }, 3000);
+
+        // Переключение экранов
+        function showChat() {
             if (user.is) {
-                document.getElementById('auth').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-                document.getElementById('userTitle').innerText = "Вы в сети как: " + user.is.alias;
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('chat-screen').style.display = 'block';
+                document.getElementById('userDisplay').innerText = "Вы: " + user.is.alias;
             }
         }
 
-        // Слушаем вход (в том числе автоматический)
-        gun.on('auth', updateUI);
+        // Событие авторизации
+        gun.on('auth', () => {
+            console.log("Успешный вход!");
+            showChat();
+        });
 
-        // 4. Логика сообщений
-        chatNode.map().on((data, id) => {
+        // Регистрация
+        async function signUp() {
+            const a = document.getElementById('alias').value;
+            const p = document.getElementById('pass').value;
+            if (a.length < 3) return alert("Логин слишком короткий");
+            
+            user.create(a, p, (ack) => {
+                if (ack.err) alert(ack.err);
+                else signIn();
+            });
+        }
+
+        // Вход
+        function signIn() {
+            const a = document.getElementById('alias').value;
+            const p = document.getElementById('pass').value;
+            user.auth(a, p, (ack) => {
+                if (ack.err) alert("Ошибка: " + ack.err);
+                else showChat();
+            });
+        }
+
+        // Отправка
+        function sendMsg() {
+            const val = document.getElementById('msgInput').value;
+            if (!val || !user.is) return;
+            
+            room.set({
+                from: user.is.alias,
+                text: val,
+                time: Date.now()
+            });
+            document.getElementById('msgInput').value = '';
+        }
+
+        // Отображение сообщений (без дубликатов)
+        room.map().on((data, id) => {
             if (!data || !data.text || document.getElementById(id)) return;
             
             const li = document.createElement('li');
             li.id = id;
             li.innerHTML = `
                 <div class="nick">${data.from}</div>
-                <div>${data.text}</div>
+                <div class="msg-text">${data.text}</div>
                 <div class="time">${new Date(data.time).toLocaleTimeString()}</div>
             `;
             document.getElementById('messages').prepend(li);
         });
 
-        // 5. Функции кнопок
-        async function signUp() {
-            const alias = document.getElementById('alias').value;
-            const pass = document.getElementById('pass').value;
-            if (!alias || !pass) return alert("Введите данные!");
-            
-            user.create(alias, pass, (ack) => {
-                if (ack.err) alert(ack.err);
-                else signIn();
-            });
-        }
+        // Проверка при загрузке страницы
+        if (user.is) showChat();
 
-        function signIn() {
-            const alias = document.getElementById('alias').value;
-            const pass = document.getElementById('pass').value;
-            
-            user.auth(alias, pass, (ack) => {
-                if (ack.err) alert("Ошибка: " + ack.err);
-                else updateUI();
-            });
-        }
-
-        function send() {
-            const text = document.getElementById('content').value;
-            if (!text || !user.is) return;
-            
-            chatNode.set({
-                text: text,
-                from: user.is.alias,
-                time: Date.now()
-            });
-            document.getElementById('content').value = '';
-        }
-
-        // Проверка при загрузке
-        updateUI();
     </script>
 </body>
 </html>
