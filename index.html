@@ -43,9 +43,10 @@
     const gun = Gun({
         peers: [
             'https://gun-manhattan.herokuapp.com/gun',
-            'https://peer.wall.gl/gun'
-        ],
-        localStorage: false // Отключим локальное хранилище для теста, чтобы видеть только РЕАЛЬНУЮ сеть
+            'https://peer.wall.gl/gun',
+            'https://gun-us.herokuapp.com/gun',
+            'https://gun-eu.herokuapp.com/gun'
+        ]
     });
 
     const user = gun.user();
