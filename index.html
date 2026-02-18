@@ -1,120 +1,134 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web3 P2P Network</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; padding: 20px; background: #f3f4f6; max-width: 500px; margin: auto; }
-        .box { background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         input { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid #ddd; }
         button { width: 100%; padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        button:hover { opacity: 0.9; }
         #messages { list-style: none; padding: 0; }
-        li { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; border-left: 4px solid #4f46e5; }
-        .status { font-size: 0.8em; color: #666; margin-bottom: 10px; }
+        li { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #4f46e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .status-bar { font-size: 0.8em; color: #666; margin-bottom: 15px; padding: 10px; background: #eee; border-radius: 8px; }
+        .nick { font-weight: bold; color: #4f46e5; }
+        .time { font-size: 0.7em; color: #999; }
     </style>
 </head>
 <body>
-    
+
+    <div class="status-bar">
+        Статус: <span id="netStatus" style="color: red;">ОФФЛАЙН (ищу узлы...)</span> 
+        <br>Активных соединений: <span id="peerCount">0</span>
+    </div>
+
     <div id="auth" class="box">
-        <div class="status">
-            Статус: <span id="netStatus" style="color: red;">ОФФЛАЙН</span> 
-            (Пиров: <span id="peerCount">0</span>)
-        </div>
         <h3>Войти в Web3</h3>
         <input id="alias" placeholder="Логин">
         <input id="pass" type="password" placeholder="Пароль">
         <button onclick="signUp()">Создать аккаунт</button>
         <button onclick="signIn()" style="background:#10b981">Войти</button>
-        <p style="font-size: 0.7em;">*Пароль нельзя восстановить, он генерирует ваш ключ.</p>
+        <p style="font-size: 0.7em; color: #888; margin-top: 10px;">* Пароль генерирует ваш уникальный ключ. Его нельзя восстановить!</p>
     </div>
 
     <div id="app" class="box" style="display:none">
-            <div class="status">
-            Статус: <span id="netStatus" style="color: red;">ОФФЛАЙН</span> 
-            (Пиров: <span id="peerCount">0</span>)
-        </div>
-        <h3 id="userTitle"></h3>
-        <div class="status">Статус: <span id="netStatus">Подключение...</span></div>
+        <h3 id="userTitle">Загрузка профиля...</h3>
         <input id="content" placeholder="Что нового?">
         <button onclick="send()">Опубликовать в P2P</button>
         <ul id="messages"></ul>
     </div>
 
-
     <script>
-    // Добавляем еще больше узлов для надежности
-    const gun = Gun({
-        peers: ['https://my-p2p-relay.onrender.com/gun']
-    });
-
-    const user = gun.user();
-
-    // Каждую секунду проверяем, сколько у нас живых соединений
-    setInterval(() => {
-        const peers = Object.keys(gun._.opt.peers).filter(url => {
-            return gun._.opt.peers[url].wire && gun._.opt.peers[url].wire.readyState === 1;
+        // 1. Инициализация Gun (только один раз!)
+        const gun = Gun({
+            peers: ['https://my-p2p-relay.onrender.com/gun']
         });
-        document.getElementById('peerCount').innerText = peers.length;
-        if (peers.length > 0) {
-            document.getElementById('netStatus').innerText = 'ОНЛАЙН';
-            document.getElementById('netStatus').style.color = 'green';
-        } else {
-            document.getElementById('netStatus').innerText = 'ОФФЛАЙН (ищу узлы...)';
-            document.getElementById('netStatus').style.color = 'red';
+        
+        const user = gun.user().recall({storage: true});
+        const chatNode = gun.get('my-private-network-test-999');
+
+        // 2. Мониторинг сети
+        setInterval(() => {
+            const peers = Object.values(gun._.opt.peers).filter(p => p.wire && p.wire.readyState === 1);
+            const statusEl = document.getElementById('netStatus');
+            const countEl = document.getElementById('peerCount');
+            
+            countEl.innerText = peers.length;
+            if (peers.length > 0) {
+                statusEl.innerText = 'ОНЛАЙН';
+                statusEl.style.color = 'green';
+            } else {
+                statusEl.innerText = 'ОФФЛАЙН (ищу узлы...)';
+                statusEl.style.color = 'red';
+            }
+        }, 1000);
+
+        // 3. Обновление интерфейса
+        function updateUI() {
+            if (user.is) {
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('userTitle').innerText = "Вы в сети как: " + user.is.alias;
+            }
         }
-    }, 2000);
 
-    const chatNode = gun.get('my-private-network-test-999'); // Новая чистая комната
+        // Слушаем вход (в том числе автоматический)
+        gun.on('auth', updateUI);
 
-    function updateUI() {
-        if (user.is) {
-            document.getElementById('auth').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            document.getElementById('userTitle').innerText = "Вы: " + user.is.alias;
-        }
-    }
-
-    // Загрузка работает ВСЕГДА, даже без логина
-    chatNode.map().on((data, id) => {
-        if (!data || !data.text) return;
-        if (!document.getElementById(id)) {
+        // 4. Логика сообщений
+        chatNode.map().on((data, id) => {
+            if (!data || !data.text || document.getElementById(id)) return;
+            
             const li = document.createElement('li');
             li.id = id;
-            li.style.borderLeft = "4px solid " + (data.from === "Kir" ? "blue" : "green");
-            li.innerHTML = `<strong>${data.from}:</strong> ${data.text} <br><small>${new Date(data.time).toLocaleTimeString()}</small>`;
+            li.innerHTML = `
+                <div class="nick">${data.from}</div>
+                <div>${data.text}</div>
+                <div class="time">${new Date(data.time).toLocaleTimeString()}</div>
+            `;
             document.getElementById('messages').prepend(li);
+        });
+
+        // 5. Функции кнопок
+        async function signUp() {
+            const alias = document.getElementById('alias').value;
+            const pass = document.getElementById('pass').value;
+            if (!alias || !pass) return alert("Введите данные!");
+            
+            user.create(alias, pass, (ack) => {
+                if (ack.err) alert(ack.err);
+                else signIn();
+            });
         }
-    });
 
-    async function signUp() {
-        user.create(document.getElementById('alias').value, document.getElementById('pass').value, (ack) => {
-            if (ack.err) alert(ack.err);
-            else signIn();
-        });
-    }
+        function signIn() {
+            const alias = document.getElementById('alias').value;
+            const pass = document.getElementById('pass').value;
+            
+            user.auth(alias, pass, (ack) => {
+                if (ack.err) alert("Ошибка: " + ack.err);
+                else updateUI();
+            });
+        }
 
-    function signIn() {
-        user.auth(document.getElementById('alias').value, document.getElementById('pass').value, (ack) => {
-            if (ack.err) alert(ack.err);
-            else updateUI();
-        });
-    }
+        function send() {
+            const text = document.getElementById('content').value;
+            if (!text || !user.is) return;
+            
+            chatNode.set({
+                text: text,
+                from: user.is.alias,
+                time: Date.now()
+            });
+            document.getElementById('content').value = '';
+        }
 
-    function send() {
-        const text = document.getElementById('content').value;
-        const name = user.is ? user.is.alias : "Аноним";
-        if (!text) return;
-        
-        chatNode.set({
-            text: text,
-            from: name,
-            time: Date.now()
-        });
-        document.getElementById('content').value = '';
-    }
-
-    updateUI();
-</script>
+        // Проверка при загрузке
+        updateUI();
+    </script>
 </body>
 </html>
