@@ -45,12 +45,7 @@
     <script>
     // Добавляем еще больше узлов для надежности
     const gun = Gun({
-        peers: [
-            'https://gun-manhattan.herokuapp.com/gun',
-            'https://peer.wall.gl/gun',
-            'https://gun-us.herokuapp.com/gun',
-            'https://gun-eu.herokuapp.com/gun'
-        ]
+        peers: ['https://my-p2p-relay.onrender.com/gun']
     });
 
     const user = gun.user();
