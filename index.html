@@ -99,43 +99,34 @@
         let typingTimeout;
         let activeTypers = {};
 
+        // Функция отправки статуса
         function handleTyping() {
-            if (!currentRoom || !user.is) return;
+            // Важно: берем имя комнаты прямо из заголовка или переменной
+            const roomName = document.getElementById('chatTitle').innerText.replace('Чат: ', '');
+            if (!roomName || !user.is) return;
 
-            // Сообщаем сети, что мы печатаем
-            currentRoom.get('typing').get(user.is.alias).put(true);
+            // Пишем напрямую в глобальный узел комнаты
+            gun.get('room-' + roomName).get('typing').get(user.is.alias).put(true);
 
-            // Очищаем старый таймер и ставим новый
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => {
-                // Через 2.5 секунды бездействия убираем статус
-                currentRoom.get('typing').get(user.is.alias).put(null);
-            }, 2500);
+                gun.get('room-' + roomName).get('typing').get(user.is.alias).put(null);
+            }, 2000);
         }
+        // Функция прослушивания
         function listenTyping(roomName) {
             const indicator = document.getElementById('typingIndicator');
             if (!indicator) return;
 
-            // Очищаем старые данные при смене комнаты
-            indicator.innerText = '';
-            activeTypers = {};
-
-            // Слушаем изменения в узле typing этой конкретной комнаты
+            // Слушаем узел печати
             gun.get('room-' + roomName).get('typing').map().on((isTyping, alias) => {
+                // Игнорим себя
                 if (!user.is || alias === user.is.alias) return;
 
-                if (isTyping) {
-                    activeTypers[alias] = true;
+                if (isTyping === true) {
+                    indicator.innerText = alias + " печатает...";
                 } else {
-                    delete activeTypers[alias];
-                }
-
-                // Формируем текст для вывода
-                const names = Object.keys(activeTypers);
-                if (names.length > 0) {
-                    indicator.innerText = names.join(', ') + (names.length > 1 ? ' печатают...' : ' печатает...');
-                } else {
-                    indicator.innerText = '';
+                    indicator.innerText = "";
                 }
             });
         }
