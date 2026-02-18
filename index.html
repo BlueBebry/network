@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 P2P Network</title>
+    <title>Web3 Private Chat</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <style>
@@ -16,84 +16,93 @@
         li { background: white; padding: 12px; margin-bottom: 12px; border-radius: 8px; border-left: 4px solid #4f46e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .status-container { font-size: 0.85em; color: #444; background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb; }
         .nick { font-weight: bold; color: #4f46e5; margin-bottom: 4px; }
-        .msg-text { word-wrap: break-word; }
         .time { font-size: 0.75em; color: #999; margin-top: 6px; }
+        .room-info { background: #e0e7ff; color: #4338ca; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; font-weight: bold; margin-bottom: 10px; display: inline-block; }
     </style>
 </head>
 <body>
 
     <div class="status-container">
-        <b>Сеть:</b> <span id="netStatus" style="color: orange;">Инициализация...</span><br>
-        <b>Пиры:</b> <span id="peerCount">0</span>
+        <b>Сеть:</b> <span id="netStatus" style="color: orange;">Подключение к Render...</span><br>
+        <b>Активных соединений:</b> <span id="peerCount">0</span>
     </div>
 
     <div id="auth-screen" class="box">
-        <h3>Вход в систему</h3>
+        <h3>Вход в Web3</h3>
         <input id="alias" placeholder="Ваш логин">
         <input id="pass" type="password" placeholder="Ваш пароль">
-        <button onclick="signUp()">Создать новый аккаунт</button>
-        <button onclick="signIn()" style="background:#10b981">Войти в чат</button>
+        <input id="roomInput" placeholder="ID секретной комнаты (напр. secret777)">
+        <button onclick="signUp()">Создать аккаунт</button>
+        <button onclick="signIn()" style="background:#10b981">Войти в комнату</button>
+        <p style="font-size: 0.7em; color: #888; margin-top: 10px;">* Пароль нельзя восстановить. Разные ID комнат разделяют чаты.</p>
     </div>
 
     <div id="chat-screen" class="box" style="display:none">
-        <h3 id="userDisplay">Вы в сети</h3>
-        <input id="msgInput" placeholder="Введите сообщение...">
-        <button onclick="sendMsg()">Отправить в P2P</button>
+        <div id="roomDisplay" class="room-info">Комната: -</div>
+        <h3 id="userDisplay">Вы: -</h3>
+        <input id="msgInput" placeholder="Ваше сообщение...">
+        <button onclick="sendMsg()">Отправить</button>
         <ul id="messages"></ul>
     </div>
 
     <script>
-        // Настройка GUN
+        // Используем твой личный узел на Render
         const RELAY_URL = 'https://my-p2p-relay.onrender.com/gun';
-        const gun = Gun({
-            peers: [RELAY_URL]
-        });
-
+        const gun = Gun({ peers: [RELAY_URL] });
         const user = gun.user().recall({storage: true});
-        const room = gun.get('my-private-network-final-v1');
+        
+        let currentRoom;
 
-        // Мониторинг сети (исправлено)
+        // Мониторинг сети
         setInterval(() => {
             const peers = gun._.opt.peers;
             let active = 0;
-            
             Object.keys(peers).forEach(id => {
                 if (peers[id].wire && peers[id].wire.readyState === 1) active++;
             });
-
-            const statusText = document.getElementById('netStatus');
             document.getElementById('peerCount').innerText = active;
-
+            const statusText = document.getElementById('netStatus');
             if (active > 0) {
                 statusText.innerText = "ОНЛАЙН";
                 statusText.style.color = "green";
             } else {
-                statusText.innerText = "ОФФЛАЙН (поиск...)";
+                statusText.innerText = "ОФФЛАЙН (пробуждение Render...)";
                 statusText.style.color = "red";
             }
-        }, 3000);
+        }, 2000);
 
-        // Переключение экранов
-        function showChat() {
-            if (user.is) {
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('chat-screen').style.display = 'block';
-                document.getElementById('userDisplay').innerText = "Вы: " + user.is.alias;
-            }
+        // Переключение на чат
+        function showChat(roomName) {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'block';
+            document.getElementById('userDisplay').innerText = "Вы в сети как: " + user.is.alias;
+            document.getElementById('roomDisplay').innerText = "Комната: " + roomName;
+            
+            // Очищаем старые сообщения из списка при смене комнаты
+            document.getElementById('messages').innerHTML = '';
+
+            // Подключаемся к комнате (уникальный путь в базе)
+            currentRoom = gun.get('private-room-' + roomName);
+
+            // Слушаем сообщения
+            currentRoom.map().on((data, id) => {
+                if (!data || !data.text || document.getElementById(id)) return;
+                const li = document.createElement('li');
+                li.id = id;
+                li.innerHTML = `
+                    <div class="nick">${data.from}</div>
+                    <div class="msg-text">${data.text}</div>
+                    <div class="time">${new Date(data.time).toLocaleTimeString()}</div>
+                `;
+                document.getElementById('messages').prepend(li);
+            });
         }
-
-        // Событие авторизации
-        gun.on('auth', () => {
-            console.log("Успешный вход!");
-            showChat();
-        });
 
         // Регистрация
         async function signUp() {
             const a = document.getElementById('alias').value;
             const p = document.getElementById('pass').value;
-            if (a.length < 3) return alert("Логин слишком короткий");
-            
+            if (!a || !p) return alert("Заполните логин и пароль");
             user.create(a, p, (ack) => {
                 if (ack.err) alert(ack.err);
                 else signIn();
@@ -104,18 +113,22 @@
         function signIn() {
             const a = document.getElementById('alias').value;
             const p = document.getElementById('pass').value;
+            const r = document.getElementById('roomInput').value || 'general';
+            
             user.auth(a, p, (ack) => {
                 if (ack.err) alert("Ошибка: " + ack.err);
-                else showChat();
+                else {
+                    localStorage.setItem('lastRoomName', r);
+                    showChat(r);
+                }
             });
         }
 
         // Отправка
         function sendMsg() {
             const val = document.getElementById('msgInput').value;
-            if (!val || !user.is) return;
-            
-            room.set({
+            if (!val || !user.is || !currentRoom) return;
+            currentRoom.set({
                 from: user.is.alias,
                 text: val,
                 time: Date.now()
@@ -123,22 +136,11 @@
             document.getElementById('msgInput').value = '';
         }
 
-        // Отображение сообщений (без дубликатов)
-        room.map().on((data, id) => {
-            if (!data || !data.text || document.getElementById(id)) return;
-            
-            const li = document.createElement('li');
-            li.id = id;
-            li.innerHTML = `
-                <div class="nick">${data.from}</div>
-                <div class="msg-text">${data.text}</div>
-                <div class="time">${new Date(data.time).toLocaleTimeString()}</div>
-            `;
-            document.getElementById('messages').prepend(li);
-        });
-
-        // Проверка при загрузке страницы
-        if (user.is) showChat();
+        // Авто-вход
+        if (user.is) {
+            const savedRoom = localStorage.getItem('lastRoomName') || 'general';
+            showChat(savedRoom);
+        }
 
     </script>
 </body>
