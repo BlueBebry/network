@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>P2P Social Network</title>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        #messages { list-style: none; padding: 0; }
+        li { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input { padding: 10px; width: 200px; border-radius: 5px; border: 1px solid #ddd; }
+        button { padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Децентрализованная лента (P2P)</h2>
+    <input id="alias" placeholder="Твое имя">
+    <input id="content" placeholder="Что нового?">
+    <button id="send">Отправить</button>
+
+    <ul id="messages"></ul>
+
+    <script>
+        // Инициализируем Gun и подключаемся к публичному узлу-посреднику
+        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+        const mesh = gun.get('our-shared-social-network-v1');
+
+        // Отправка сообщения
+        document.getElementById('send').onclick = () => {
+            const alias = document.getElementById('alias').value || 'Аноним';
+            const text = document.getElementById('content').value;
+            if(!text) return;
+            
+            // Сохраняем данные в распределенную сеть
+            mesh.set({ alias, text, time: Date.now() });
+            document.getElementById('content').value = '';
+        };
+
+        // Слушаем обновления от других пиров (ноутбуков)
+        mesh.map().on((data, id) => {
+            if(!data || !data.text) return;
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${data.alias}:</strong> ${data.text}`;
+            
+            const list = document.getElementById('messages');
+            list.prepend(li); // Добавляем новые сообщения наверх
+        });
+    </script>
+</body>
+</html>
