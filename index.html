@@ -36,13 +36,12 @@
     <script>
     // Добавляем еще больше узлов для надежности
     const gun = Gun([
-        'https://gun-manhattan.herokuapp.com/gun',
-        'https://peer.wall.gl/gun',
-        'https://gundb-relay-mlmptvoxqy.now.sh/gun'
+        'https://gun-us.herokuapp.com/gun',
+        'https://gun-eu.herokuapp.com/gun'
     ]);
 
     const user = gun.user().recall({storage: true});
-    const chatNode = gun.get('shared-web3-feed-final-test'); // Новая чистая комната
+    const chatNode = gun.get('my-private-network-test-999'); // Новая чистая комната
 
     function updateUI() {
         if (user.is) {
