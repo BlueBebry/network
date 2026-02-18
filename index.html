@@ -109,20 +109,16 @@
             const alias = document.getElementById('loginAlias').value;
             const pass = document.getElementById('loginPass').value;
 
-            if (!alias || !pass) return alert("Введите логин и пароль");
+            if (!alias || !pass) return alert("Введите данные");
 
-            // 1. Сначала полностью выходим, чтобы очистить память Gun
-            user.leave(); 
-
-            // 2. Пробуем войти
+            user.leave(); // Очистка старых попыток
             user.auth(alias, pass, (ack) => {
                 if (ack.err) {
-                    console.error("Ошибка Gun:", ack.err);
-                    alert("Не удалось войти: " + ack.err);
+                    alert("Ошибка: " + ack.err);
                 } else {
-                    console.log("Успешный вход за:", alias);
-                    // Важно: даем Gun секунду записать ключи в хранилище и обновляем
-                    setTimeout(() => { location.reload(); }, 500);
+                    console.log("Успешный вход!");
+                    // Вместо location.reload() просто вызываем функцию показа
+                    showApp();
                 }
             });
         }
@@ -148,14 +144,18 @@
 
         // Проверка авторизации при загрузке (убедись, что это есть в коде)
         user.recall({storage: true}, (ack) => {
+            console.log("Проверка сессии...", ack);
             if (user.is) {
-                console.log("Сессия восстановлена:", user.is.alias);
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('userSection').classList.remove('hidden');
-                document.getElementById('welcomeMsg').innerText = `Привет, ${user.is.alias}!`;
-                showFeed(); // запускаем ленту
+                showApp(); // Если сессия есть, сразу показываем интерфейс
             }
         });
+        // 2. Функция для переключения экранов без перезагрузки
+        function showApp() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('userSection').classList.remove('hidden');
+            document.getElementById('welcomeMsg').innerText = `Привет, ${user.is.alias}!`;
+            showFeed(); // Загружаем посты
+        }
 
         // ЛЕНТА (POSTS)
         function sendPost() {
