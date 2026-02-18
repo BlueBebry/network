@@ -97,6 +97,7 @@
         const globalFeed = gun.get('my-p2p-social-feed-v1');
         let currentRoom = null;
         let typingTimeout;
+        let activeTypers = {};
 
         function handleTyping() {
             if (!currentRoom || !user.is) return;
@@ -113,18 +114,26 @@
         }
         function listenTyping(roomName) {
             const indicator = document.getElementById('typingIndicator');
-            
-            gun.get('room-' + roomName).get('typing').map().on((isTyping, alias) => {
-                // Не показываем статус самого себя
-                if (alias === user.is.alias) return;
+            if (!indicator) return;
 
-                const typingUsers = [];
-                // Нам нужно собрать всех, кто сейчас печатает в этой комнате
-                // (Gun.js будет вызывать этот колбэк для каждого изменившегося юзера)
-                
-                // Маленький хак для отображения:
+            // Очищаем старые данные при смене комнаты
+            indicator.innerText = '';
+            activeTypers = {};
+
+            // Слушаем изменения в узле typing этой конкретной комнаты
+            gun.get('room-' + roomName).get('typing').map().on((isTyping, alias) => {
+                if (!user.is || alias === user.is.alias) return;
+
                 if (isTyping) {
-                    indicator.innerText = `${alias} печатает...`;
+                    activeTypers[alias] = true;
+                } else {
+                    delete activeTypers[alias];
+                }
+
+                // Формируем текст для вывода
+                const names = Object.keys(activeTypers);
+                if (names.length > 0) {
+                    indicator.innerText = names.join(', ') + (names.length > 1 ? ' печатают...' : ' печатает...');
                 } else {
                     indicator.innerText = '';
                 }
