@@ -175,15 +175,20 @@
             document.getElementById('postFormCard').classList.remove('hidden');
             document.getElementById('feed').classList.remove('hidden');
             
+            // Очищаем ленту перед загрузкой, чтобы не было дублей
             document.getElementById('feed').innerHTML = '';
+
+            // Слушаем изменения в ленте в реальном времени
             globalFeed.map().on((data, id) => {
                 if (!data) {
-                    // Если данные пришли как null — удаляем элемент из верстки
+                    // Если данные null (пост удален), убираем его с экрана
                     const el = document.getElementById(id);
                     if (el) el.remove();
                     return;
                 }
-                if (data.content) renderPost(data, id);
+                if (data.content) {
+                    renderPost(data, id);
+                }
             });
         }
 
@@ -191,8 +196,9 @@
             if (document.getElementById(id)) return;
             const feed = document.getElementById('feed');
             
-            // Проверяем, является ли текущий юзер автором поста
-            const isMyPost = user.is && p.username === user.is.alias;
+            // Проверка автора (выводим в консоль для теста)
+            const currentUser = user.is ? user.is.alias : null;
+            const isMyPost = currentUser === p.username;
             
             const postHtml = `
                 <div class="post card" id="${id}">
@@ -201,7 +207,7 @@
                             <div class="avatar" style="background: ${getAvatarColor(p.username)}">${p.username[0]}</div>
                             <strong>${p.username}</strong>
                         </div>
-                        ${isMyPost ? `<button onclick="deletePost('${id}')" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding: 4px 8px; border-radius: 6px; cursor:pointer; font-size:0.7em;">Удалить</button>` : ''}
+                        ${isMyPost ? `<button onclick="deletePost('${id}')" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding: 4px 12px; border-radius: 8px; cursor:pointer; font-size:0.75em; font-weight:600;">Удалить</button>` : ''}
                     </div>
                     <p style="padding-left: 52px; margin: 0;">${p.content}</p>
                 </div>`;
@@ -267,14 +273,10 @@
         function showChats() { hideAll(); document.getElementById('chatsListSection').classList.remove('hidden'); }
         function showMyProfile() { alert("Профиль в разработке! Но ваш ник: " + user.is.alias); }
         function deletePost(id) {
-            if (!confirm('Удалить этот пост навсегда из P2P-сети?')) return;
+            if (!confirm('Удалить этот пост?')) return;
             
-            // В Gun.js удаление — это установка значения в null
+            // В Gun удаление — это запись null в узел
             globalFeed.get(id).put(null);
-            
-            // Сразу скрываем из интерфейса для скорости
-            const postElement = document.getElementById(id);
-            if (postElement) postElement.remove();
         }
     </script>
 </body>
