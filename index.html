@@ -1,52 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>P2P Social Network</title>
+    <title>Web3 P2P Network</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        body { font-family: 'Inter', sans-serif; padding: 20px; background: #f3f4f6; max-width: 500px; margin: auto; }
+        .box { background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid #ddd; }
+        button { width: 100%; padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
         #messages { list-style: none; padding: 0; }
-        li { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        input { padding: 10px; width: 200px; border-radius: 5px; border: 1px solid #ddd; }
-        button { padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        li { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; border-left: 4px solid #4f46e5; }
+        .status { font-size: 0.8em; color: #666; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <h2>Децентрализованная лента (P2P)</h2>
-    <input id="alias" placeholder="Твое имя">
-    <input id="content" placeholder="Что нового?">
-    <button id="send">Отправить</button>
 
-    <ul id="messages"></ul>
+    <div id="auth" class="box">
+        <h3>Войти в Web3</h3>
+        <input id="alias" placeholder="Логин">
+        <input id="pass" type="password" placeholder="Пароль">
+        <button onclick="signUp()">Создать аккаунт</button>
+        <button onclick="signIn()" style="background:#10b981">Войти</button>
+        <p style="font-size: 0.7em;">*Пароль нельзя восстановить, он генерирует ваш ключ.</p>
+    </div>
+
+    <div id="app" class="box" style="display:none">
+        <h3 id="userTitle"></h3>
+        <div class="status">Статус: <span id="netStatus">Подключение...</span></div>
+        <input id="content" placeholder="Что нового?">
+        <button onclick="send()">Опубликовать в P2P</button>
+        <ul id="messages"></ul>
+    </div>
 
     <script>
-        // Инициализируем Gun и подключаемся к публичному узлу-посреднику
+        // Используем список стабильных узлов
         const gun = Gun([
             'https://gun-manhattan.herokuapp.com/gun',
-            'https://gun-relay.herokuapp.com/gun'
+            'https://peer.wall.gl/gun'
         ]);
-        const mesh = gun.get('our-shared-social-network-v1');
+        const user = gun.user().recall({storage: true});
 
-        // Отправка сообщения
-        document.getElementById('send').onclick = () => {
-            const alias = document.getElementById('alias').value || 'Аноним';
+        // Следим за статусом сети
+        gun.on('hi', () => document.getElementById('netStatus').innerText = 'Онлайн (Peer connected)');
+        
+        // Регистрация
+        async function signUp() {
+            user.create(document.getElementById('alias').value, document.getElementById('pass').value, (ack) => {
+                if (ack.err) alert(ack.err);
+                else signIn();
+            });
+        }
+
+        // Вход
+        function signIn() {
+            user.auth(document.getElementById('alias').value, document.getElementById('pass').value, (ack) => {
+                if (ack.err) alert(ack.err);
+                else location.reload(); // Перезагружаем для активации recall
+            });
+        }
+
+        // Если залогинены - показываем интерфейс
+        if (user.is) {
+            document.getElementById('auth').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('userTitle').innerText = "Вы: " + user.is.alias;
+            
+            // Загрузка сообщений из глобальной сети
+            gun.get('shared-web3-feed-v2').map().on((data, id) => {
+                if (!data || !data.text) return;
+                const li = document.createElement('li');
+                li.id = id;
+                li.innerHTML = `<strong>${data.from}:</strong> ${data.text}`;
+                const list = document.getElementById('messages');
+                if (!document.getElementById(id)) list.prepend(li);
+            });
+        }
+
+        // Отправка
+        function send() {
             const text = document.getElementById('content').value;
-            if(!text) return;
+            if (!text) return;
             
-            // Сохраняем данные в распределенную сеть
-            mesh.set({ alias, text, time: Date.now() });
+            // Публикуем данные
+            gun.get('shared-web3-feed-v2').set({
+                text: text,
+                from: user.is.alias,
+                time: Date.now()
+            });
             document.getElementById('content').value = '';
-        };
-
-        // Слушаем обновления от других пиров (ноутбуков)
-        mesh.map().on((data, id) => {
-            if(!data || !data.text) return;
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>${data.alias}:</strong> ${data.text}`;
-            
-            const list = document.getElementById('messages');
-            list.prepend(li); // Добавляем новые сообщения наверх
-        });
+        }
     </script>
 </body>
 </html>
