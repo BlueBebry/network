@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Моя Соцсеть</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Основные настройки страницы */
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            max-width: 800px; /* Немного расширил для удобства */
+            margin: 20px auto; 
+            background: #f3f4f6; /* Светлый современный фон */
+            color: #1f2937; 
+            padding: 10px; 
+            line-height: 1.5;
+        }
+
+        /* Карточки и посты */
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+            margin-bottom: 20px; 
+        }
+
+        .post { 
+            background: white; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            border-radius: 16px; 
+            border-left: 6px solid #4f46e5; /* Индиго вместо стандартного синего */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+        
+        .post:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Поля ввода */
+        input, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            box-sizing: border-box; 
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, textarea:focus {
+            border-color: #4f46e5;
+        }
+
+        /* Кнопки */
+        button { 
+            background: #4f46e5; 
+            color: white; 
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            width: 100%; 
+            font-weight: 600;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        button:hover { 
+            background: #4338ca; 
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Служебные классы */
+        .hidden { display: none !important; }
+        
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+        }
+
+        /* Аватарки */
+        .avatar {
+            width: 45px; 
+            height: 45px; 
+            border-radius: 12px; /* Более квадратные со скруглением — тренд */
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            color: white; 
+            font-weight: bold; 
+            flex-shrink: 0;
+            margin-right: 12px; 
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Чат */
+        #chatHistory {
+            height: 400px; 
+            overflow-y: auto; 
+            border: 1px solid #f3f4f6;
+            padding: 15px; 
+            background: #ffffff; 
+            display: flex;
+            flex-direction: column; 
+            margin-bottom: 10px; 
+            border-radius: 12px;
+        }
+
+        .msg { 
+            margin-bottom: 10px; 
+            padding: 10px 16px; 
+            border-radius: 18px; 
+            max-width: 80%; 
+            font-size: 0.95em; 
+            position: relative;
+        }
+
+        .msg-in { 
+            background: #f3f4f6; 
+            color: #1f2937;
+            align-self: flex-start; 
+            border-bottom-left-radius: 4px; 
+        }
+
+        .msg-out { 
+            background: #4f46e5; 
+            color: white; 
+            align-self: flex-end; 
+            border-bottom-right-radius: 4px; 
+        }
+
+        /* Список чатов */
+        .chat-item { 
+            cursor: pointer; 
+            padding: 15px; 
+            border-radius: 12px;
+            margin-bottom: 5px;
+            display: flex; 
+            align-items: center; 
+            transition: background 0.2s;
+        }
+
+        .chat-item:hover { 
+            background: #eef2ff; 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="authSection" class="card">
+        <div id="loginForm">
+            <h2>Вход</h2>
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPass" placeholder="Пароль">
+            <button onclick="login()">Войти</button>
+            <p style="text-align:center">Нет аккаунта? <a href="#" onclick="toggleAuth()">Зарегистрироваться</a></p>
+        </div>
+        <div id="registerForm" class="hidden">
+            <h2>Регистрация</h2>
+            <input type="text" id="regName" placeholder="Имя пользователя">
+            <input type="email" id="regEmail" placeholder="Email">
+            <input type="password" id="regPass" placeholder="Пароль">
+            <button onclick="register()" style="background: #42b72a;">Создать аккаунт</button>
+            <p style="text-align:center">Уже есть аккаунт? <a href="#" onclick="toggleAuth()">Войти</a></p>
+        </div>
+    </div>
+
+    <div id="userSection" class="hidden">
+        <div class="header">
+            <h2 id="welcomeMsg">Привет!</h2>
+            <button onclick="logout()" style="width: auto; background: #606770;">Выйти</button>
+        </div>
+
+        <div style="display: flex; gap: 20px;">
+            <div style="width: 150px; flex-shrink: 0;">
+                <button onclick="showFeed()" style="margin-bottom: 10px; background: #e4e6eb; color: black;">Лента</button>
+                <button onclick="showMyProfile()" style="margin-bottom: 10px; background: #e4e6eb; color: black;">Профиль</button>
+                <button onclick="showChats()" style="background: #e4e6eb; color: black; position: relative;">
+    Сообщения
+    <span id="unreadBadge" class="hidden" style="background: #f02849; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7em; position: absolute; top: -5px; right: -5px;">0</span>
+</button>
+            </div>
+
+            <div style="flex-grow: 1;">
+                <h3 id="viewTitle">Лента новостей</h3>
+                <div id="profileActions" style="margin-bottom: 15px;"></div>
+                <div id="postFormCard" class="card">
+                    <textarea id="postContent" placeholder="Что у вас нового?"></textarea>
+                    <button onclick="sendPost()">Опубликовать</button>
+                </div>
+
+                <div id="chatsListSection" class="card hidden">
+                    <div id="chatsList"></div>
+                </div>
+
+                <div id="activeChatSection" class="card hidden">
+                    <button onclick="showChats()" style="width: auto; padding: 5px 10px; margin-bottom: 10px; background: #eee; color: #333;">← Назад</button>
+                    <h3 id="chatTitle">Чат</h3>
+                    <div id="chatHistory"></div>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="msgContent" placeholder="Напишите сообщение...">
+                        <button onclick="sendMessage()" style="width: auto;">Отправить</button>
+                    </div>
+                </div>
+
+                <div id="feed"></div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script>
+    const API_URL = 'http://localhost:5000';
+    let currentFilter = 'all';
+
+    // Переменные для управления таймерами
+    let chatInterval = null; 
+    let chatsListInterval = null;
+    let mainSyncInterval = null;
+
+    // Главная функция синхронизации уведомлений
+    async function refreshAllNotifications() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        // 1. Обновляем общее количество на кнопке слева
+        await checkUnreadMessages();
+
+        // 2. Если открыт список чатов — обновляем его
+        const chatsSection = document.getElementById('chatsListSection');
+        if (chatsSection && !chatsSection.classList.contains('hidden')) {
+            await loadChatsList();
+        }
+    }
+
+    // Запуск при загрузке
+    window.onload = () => {
+        if (localStorage.getItem('token')) {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('userSection').classList.remove('hidden');
+            document.getElementById('welcomeMsg').innerText = `Привет, ${localStorage.getItem('username')}!`;
+            showFeed();
+            
+            // Запускаем единую синхронизацию раз в секунду
+            if (mainSyncInterval) clearInterval(mainSyncInterval);
+            mainSyncInterval = setInterval(refreshAllNotifications, 1000);
+        }
+    };
+
+    async function checkUnreadMessages() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_URL}/unread-count`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const badge = document.getElementById('unreadBadge');
+            if (data.count > 0) {
+                badge.innerText = data.count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        } catch (e) { console.log("Ошибка уведомлений", e); }
+    }
+
+    function hideAllSections() {
+    document.getElementById('postFormCard').classList.add('hidden');
+    document.getElementById('chatsListSection').classList.add('hidden');
+    document.getElementById('activeChatSection').classList.add('hidden');
+    document.getElementById('feed').classList.add('hidden');
+    
+    // Очищаем кнопки профиля при уходе из раздела
+    if (document.getElementById('profileActions')) {
+        document.getElementById('profileActions').innerHTML = '';
+    }
+
+    if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+}
+
+    // --- ЧАТЫ ---
+
+    async function loadChatsList() {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/chats`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const chats = await res.json();
+        const listDiv = document.getElementById('chatsList');
+        
+        if (chats.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; color:gray; padding:20px;">У вас пока нет диалогов.</p>';
+            return;
+        }
+
+        listDiv.innerHTML = chats.map(c => `
+            <div class="chat-item" onclick="openChat('${c.username}')">
+                <div class="avatar" style="background:${getAvatarColor(c.username)}">${c.username[0]}</div>
+                <strong>${c.username}</strong>
+                ${c.unread_count > 0 ? `<span style="background: #f02849; color: white; border-radius: 50%; padding: 2px 8px; font-size: 0.8em; margin-left: auto; font-weight: bold;">${c.unread_count}</span>` : ''}
+            </div>
+        `).join('');
+    }
+
+    async function showChats() {
+        hideAllSections();
+        document.getElementById('viewTitle').innerText = 'Мои сообщения';
+        document.getElementById('chatsListSection').classList.remove('hidden');
+        await loadChatsList();
+    }
+
+    async function openChat(username) {
+        hideAllSections();
+        currentFilter = username;
+        document.getElementById('viewTitle').innerText = 'Диалог';
+        document.getElementById('activeChatSection').classList.remove('hidden');
+        document.getElementById('chatTitle').innerText = `Чат с ${username}`;
+        
+        await loadMessages(username);
+        checkUnreadMessages();
+
+        // Таймер для самого чата (сообщения внутри)
+        chatInterval = setInterval(() => {
+            if (currentFilter && !document.getElementById('activeChatSection').classList.contains('hidden')) {
+                loadMessages(currentFilter);
+            }
+        }, 2000);
+    }
+
+    async function loadMessages(username) {
+        const token = localStorage.getItem('token');
+        const myName = localStorage.getItem('username');
+        const res = await fetch(`${API_URL}/messages/${username}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const messages = await res.json();
+        const history = document.getElementById('chatHistory');
+
+        const isAtBottom = history.scrollHeight - history.scrollTop <= history.clientHeight + 60;
+
+        history.innerHTML = messages.map(m => `
+            <div class="msg ${m.sender_name === myName ? 'msg-out' : 'msg-in'}">
+                ${m.content}
+            </div>
+        `).join('');
+
+        if (isAtBottom) history.scrollTop = history.scrollHeight;
+    }
+
+    // Остальные функции (sendMessage, loadPosts, login и т.д.) оставляешь без изменений
+    async function sendMessage() {
+        const content = document.getElementById('msgContent').value;
+        const token = localStorage.getItem('token');
+        if (!content) return;
+        await fetch(`${API_URL}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ receiver_name: currentFilter, content })
+        });
+        document.getElementById('msgContent').value = '';
+        loadMessages(currentFilter);
+    }
+
+    async function loadPosts() {
+    try {
+        const res = await fetch(`${API_URL}/posts`);
+        const allPosts = await res.json();
+        const feed = document.getElementById('feed');
+        const currentUsername = localStorage.getItem('username');
+        
+        let postsToShow = (currentFilter === 'all') 
+            ? allPosts 
+            : allPosts.filter(p => p.username === currentFilter);
+
+        feed.innerHTML = postsToShow.map(p => `
+            <div class="post card" style="border-left: 5px solid ${getAvatarColor(p.username)};">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div class="avatar" style="background: ${getAvatarColor(p.username)}">${p.username[0]}</div>
+                    <div style="display: flex; flex-direction: column;">
+                        <strong onclick="showUserProfile('${p.username}')" style="cursor: pointer; text-decoration: underline;">${p.username}</strong>
+                        <span style="font-size: 0.75em; color: #65676b;">${new Date(p.created_at).toLocaleString()}</span>
+                    </div>
+                </div>
+                
+                <p style="padding-left: 52px; margin: 0;">${p.content}</p>
+                
+                <div style="padding-left: 52px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 20px;">
+                        
+                        <button onclick="toggleLike(${p.id})" style="width:auto; background:none; color:#65676b; border:none; cursor:pointer; padding:5px; display:flex; align-items:center; gap:6px; transition: color 0.2s;">
+                            <span style="font-size: 1.2em; filter: grayscale(100%); transition: filter 0.2s;" onmouseover="this.style.filter='none'" onmouseout="this.style.filter='grayscale(100%)'">❤️</span> 
+                            <span style="font-weight: 600; color: #4f46e5;">${p.likes_count || 0}</span>
+                        </button>
+
+                        <button onclick="loadComments(${p.id})" style="width:auto; background:none; color:#65676b; border:none; cursor:pointer; padding:5px; display:flex; align-items:center; gap:6px;">
+                            <span style="font-size: 1.2em;">💬</span>
+                            <span style="font-weight: 600;">${p.comments_count || 0}</span>
+                        </button>
+                    </div>
+
+                    ${p.username === currentUsername ? `
+                        <button onclick="deletePost(${p.id})" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding: 6px 12px; border-radius: 8px; cursor:pointer; font-size:0.8em; font-weight:600;">
+                            Удалить
+                        </button>
+                    ` : ''}
+                </div>
+
+                <div id="comm-section-${p.id}" style="padding-left: 52px; margin-top: 15px;">
+                    <div id="comm-list-${p.id}" class="hidden" style="margin-bottom: 10px; border-top: 1px solid #eee; padding-top: 10px;"></div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="comm-input-${p.id}" placeholder="Написать комментарий..." 
+                            style="flex-grow: 1; margin: 0; padding: 8px; font-size: 0.9em; border: 1px solid #ddd; border-radius: 6px;">
+                        <button onclick="sendComment(${p.id})" 
+                                style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #1877f2; border-radius: 6px;">
+                            >
+                        </button>
+                    </div>
+                </div>
+            </div>`).join('');
+    } catch (err) {
+        console.error("Ошибка загрузки постов:", err);
+    }
+}
+
+    function getAvatarColor(username) {
+        const colors = ['#1877f2', '#42b72a', '#fabb2d', '#f02849', '#ff7e29', '#8e44ad'];
+        let hash = 0;
+        for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash);
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    async function sendPost() {
+        const content = document.getElementById('postContent').value;
+        const token = localStorage.getItem('token');
+        if (!content) return;
+        await fetch(`${API_URL}/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ content })
+        });
+        document.getElementById('postContent').value = '';
+        loadPosts();
+    }
+
+    async function deletePost(id) {
+        if (!confirm('Удалить?')) return;
+        await fetch(`${API_URL}/posts/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        loadPosts();
+    }
+
+    function showFeed() {
+        hideAllSections();
+        currentFilter = 'all';
+        document.getElementById('viewTitle').innerText = 'Лента новостей';
+        document.getElementById('postFormCard').classList.remove('hidden');
+        document.getElementById('feed').classList.remove('hidden');
+        loadPosts();
+    }
+
+    async function showUserProfile(username) {
+    hideAllSections();
+    currentFilter = username;
+    const myName = localStorage.getItem('username');
+    const actionsDiv = document.getElementById('profileActions');
+    
+    // Очищаем контейнер кнопок перед отрисовкой
+    actionsDiv.innerHTML = '';
+    
+    document.getElementById('viewTitle').innerText = (username === myName) ? 'Мой профиль' : `Профиль: ${username}`;
+    document.getElementById('feed').classList.remove('hidden');
+
+    // Если это чужой профиль — добавляем кнопку "Написать сообщение"
+    if (username !== myName) {
+        actionsDiv.innerHTML = `
+            <button onclick="openChat('${username}')" style="background: #42b72a; width: auto; padding: 10px 20px;">
+                Написать сообщение
+            </button>
+        `;
+    }
+
+    loadPosts();
+}
+
+    function showMyProfile() { showUserProfile(localStorage.getItem('username')); }
+
+    async function login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPass').value;
+        const res = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+            location.reload();
+        } else alert(data.error);
+    }
+
+    async function register() {
+        const username = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPass').value;
+        const res = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+        const data = await res.json();
+        if (data.success) { alert('Успех!'); toggleAuth(); } else alert(data.error);
+    }
+
+    function toggleAuth() {
+        document.getElementById('loginForm').classList.toggle('hidden');
+        document.getElementById('registerForm').classList.toggle('hidden');
+    }
+
+    function logout() { localStorage.clear(); location.reload(); }
+
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'token' || event.key === 'username') location.reload();
+    });
+    
+    async function toggleLike(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/posts/${postId}/like`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        // Находим кнопку лайка именно этого поста
+        const likeBtn = document.querySelector(`button[onclick="toggleLike(${postId})"]`);
+        const countSpan = likeBtn.querySelector('span:last-child');
+        
+        // Получаем текущее число и меняем его в зависимости от ответа сервера
+        let currentCount = parseInt(countSpan.innerText);
+        countSpan.innerText = data.liked ? currentCount + 1 : currentCount - 1;
+        
+    } catch (err) {
+        console.error("Ошибка лайка:", err);
+    }
+}
+async function sendComment(postId) {
+    const input = document.getElementById(`comm-input-${postId}`);
+    const content = input.value;
+    const token = localStorage.getItem('token');
+    if (!content) return;
+
+    await fetch(`${API_URL}/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ content })
+    });
+    input.value = '';
+    loadComments(postId); // Перегружаем список комментов
+}
+
+async function loadComments(postId) {
+    const res = await fetch(`${API_URL}/posts/${postId}/comments`);
+    const comments = await res.json();
+    const container = document.getElementById(`comm-list-${postId}`);
+    container.innerHTML = comments.map(c => `
+        <div style="font-size: 0.85em; background: #f0f2f5; padding: 8px; border-radius: 10px; margin-top: 5px;">
+            <strong>${c.username}:</strong> ${c.content}
+        </div>
+    `).join('');
+    container.classList.remove('hidden');
+}
+</script>
+</body>
+</html>
