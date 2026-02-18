@@ -104,21 +104,40 @@
         }, 2000);
 
         // ВХОД / РЕГИСТРАЦИЯ
+        // ОБНОВЛЕННАЯ РЕГИСТРАЦИЯ
         async function register() {
             const alias = document.getElementById('regAlias').value;
             const pass = document.getElementById('regPass').value;
+            
+            if (alias.length < 3) return alert("Логин слишком короткий");
+
+            // Принудительно выходим из старых сессий перед созданием нового
+            user.leave(); 
+            
             user.create(alias, pass, (ack) => {
-                if (ack.err) alert(ack.err);
-                else { alert("Аккаунт создан!"); toggleAuth(); }
+                if (ack.err) {
+                    alert("Ошибка регистрации: " + ack.err);
+                } else {
+                    alert("Аккаунт " + alias + " создан! Теперь попробуйте войти.");
+                    toggleAuth(); // Переключаем на форму входа
+                }
             });
         }
 
+        // ОБНОВЛЕННЫЙ ВХОД
         async function login() {
             const alias = document.getElementById('loginAlias').value;
             const pass = document.getElementById('loginPass').value;
+
+            // Сначала пробуем просто войти
             user.auth(alias, pass, (ack) => {
-                if (ack.err) alert(ack.err);
-                else location.reload();
+                if (ack.err) {
+                    console.error(ack.err);
+                    alert("Ошибка входа: " + ack.err + "\n\nПопробуйте создать новый аккаунт с другим логином, если этот не создался.");
+                } else {
+                    console.log("Успешный вход!");
+                    location.reload(); // Перезагружаем, чтобы сработал user.is
+                }
             });
         }
 
