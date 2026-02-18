@@ -80,6 +80,7 @@
                     <button onclick="showChats()" style="width: auto; padding: 5px 10px; margin-bottom: 10px; background: #eee; color: #333;">← Назад</button>
                     <h3 id="chatTitle">Чат</h3>
                     <div id="chatHistory"></div>
+                    <div id="typingIndicator" style="font-size: 0.8em; color: gray; height: 20px; margin-bottom: 5px; font-style: italic;"></div>
                     <div style="display: flex; gap: 5px;">
                         <input type="text" id="msgContent" placeholder="Напишите сообщение...">
                         <button onclick="sendMessage()" style="width: auto;">Отправить</button>
@@ -95,7 +96,40 @@
         const user = gun.user().recall({storage: true});
         const globalFeed = gun.get('my-p2p-social-feed-v1');
         let currentRoom = null;
+        let typingTimeout;
 
+        function handleTyping() {
+            if (!currentRoom || !user.is) return;
+
+            // Сообщаем сети, что мы печатаем
+            currentRoom.get('typing').get(user.is.alias).put(true);
+
+            // Очищаем старый таймер и ставим новый
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                // Через 2.5 секунды бездействия убираем статус
+                currentRoom.get('typing').get(user.is.alias).put(null);
+            }, 2500);
+        }
+        function listenTyping(roomName) {
+            const indicator = document.getElementById('typingIndicator');
+            
+            gun.get('room-' + roomName).get('typing').map().on((isTyping, alias) => {
+                // Не показываем статус самого себя
+                if (alias === user.is.alias) return;
+
+                const typingUsers = [];
+                // Нам нужно собрать всех, кто сейчас печатает в этой комнате
+                // (Gun.js будет вызывать этот колбэк для каждого изменившегося юзера)
+                
+                // Маленький хак для отображения:
+                if (isTyping) {
+                    indicator.innerText = `${alias} печатает...`;
+                } else {
+                    indicator.innerText = '';
+                }
+            });
+        }
         // МОНИТОРИНГ СЕТИ
         setInterval(() => {
             const peers = Object.values(gun._.opt.peers).filter(p => p.wire && p.wire.readyState === 1);
@@ -226,6 +260,7 @@
                 if (!data || !data.content || document.getElementById(id)) return;
                 renderMsg(data, id);
             });
+            listenTyping(roomName);
         }
 
         function renderMsg(m, id) {
