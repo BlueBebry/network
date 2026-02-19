@@ -321,10 +321,25 @@
         function renderMsg(m, id) {
             const h = document.getElementById('chatHistory');
             const isMe = m.sender === user.is.alias;
+            const isAdmin = user.is && user.is.pub === ADMIN_PUB; // Проверка на админа
+
             const d = document.createElement('div');
-            d.id = id; d.className = `msg ${isMe ? 'msg-out' : 'msg-in'}`;
-            d.innerText = `${isMe ? '' : m.sender + ': '}${m.content}`;
-            h.appendChild(d); h.scrollTop = h.scrollHeight;
+            d.id = id; 
+            d.className = `msg ${isMe ? 'msg-out' : 'msg-in'}`;
+            
+            // Добавляем маленькую кнопку удаления для админа рядом с чужим сообщением
+            const delBtn = (isAdmin && !isMe) ? `<span onclick="deleteChatMessage('${id}')" style="cursor:pointer; margin-left:8px; opacity:0.5;">🗑️</span>` : '';
+            
+            d.innerHTML = `${isMe ? '' : '<strong>'+m.sender+'</strong>: '}${m.content}${delBtn}`;
+            h.appendChild(d); 
+            h.scrollTop = h.scrollHeight;
+        }
+        // Новая функция для удаления сообщений в чате
+        function deleteChatMessage(msgId) {
+            if (!confirm('Удалить это сообщение для всех?')) return;
+            currentRoom.get(msgId).put(null);
+            const el = document.getElementById(msgId);
+            if (el) el.remove();
         }
 
         // HELPERS
