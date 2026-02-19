@@ -253,21 +253,37 @@
         function openChat(name) {
             if(!name) return;
             hideAll();
+            
             document.getElementById('viewTitle').innerText = 'Чат: ' + name;
             document.getElementById('activeChatSection').classList.remove('hidden');
-            document.getElementById('chatTitle').innerText = `Чат: ${name}`;
-            document.getElementById('chatHistory').innerHTML = '';
+            
+            const historyEl = document.getElementById('chatHistory');
+            historyEl.innerHTML = ''; 
+            
+            // Если мы уже были в какой-то комнате, отписываемся от неё (если Gun позволяет)
+            // Но самый надежный способ в простом Gun - проверка на наличие ID в DOM
+            
             currentRoom = gun.get('room-' + name);
-            currentRoom.map().on((data, id) => {
-                if (!data || !data.content || id === 'typing' || document.getElementById(id)) return;
+            
+            // Чистим карту и подписываемся заново
+            currentRoom.get('messages').map().on((data, id) => {
+                if (!data || !data.content || document.getElementById(id)) return;
                 renderMsg(data, id);
             });
+            
             listenTyping(name);
         }
         function sendMessage() {
             const input = document.getElementById('msgContent');
             if (!input.value || !currentRoom) return;
-            currentRoom.set({ sender: user.is.alias, content: input.value, time: Date.now() });
+            
+            // Сохраняем в узел messages внутри комнаты
+            currentRoom.get('messages').set({ 
+                sender: user.is.alias, 
+                content: input.value, 
+                time: Date.now() 
+            });
+            
             currentRoom.get('typing').get(user.is.alias).put(false);
             input.value = '';
         }
