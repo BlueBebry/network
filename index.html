@@ -228,6 +228,7 @@
         const globalFeed = gun.get('my-p2p-social-feed-v1');
         let currentRoom = null;
         let typingTimeout;
+        let activeStatusListener = null; // Переменная для хранения слушателя статуса
 
         // AUTH
         async function login() {
@@ -294,21 +295,32 @@
             // Загружаем посты
             renderMyPosts(targetAlias);
 
-            // --- ЛОГИКА ОНЛАЙНА ---
+            // --- ЛОГИКА ОНЛАЙНА (ИСПРАВЛЕННАЯ) ---
             const badge = document.getElementById('onlineStatusBadge');
             const lastSeenText = document.getElementById('lastSeenText');
             
-            // Подписываемся на последнее время активности пользователя
-            gun.user(targetPub).get('profile').get('lastSeen').on((time) => {
-                const isOnline = Date.now() - time < 30000; // Если активность была меньше 30 сек назад
+            // 1. Если был старый слушатель — выключаем его, чтобы данные не перемешивались
+            if (activeStatusListener) {
+                activeStatusListener.off(); 
+            }
+
+            // 2. Сбрасываем статус в дефолт перед загрузкой нового
+            badge.style.background = '#9ca3af';
+            lastSeenText.innerText = 'Проверка...';
+
+            // 3. Создаем новый слушатель и сохраняем его в переменную
+            activeStatusListener = gun.user(targetPub).get('profile').get('lastSeen');
+            
+            activeStatusListener.on((time) => {
+                const isOnline = Date.now() - time < 35000; 
                 
                 if (isOnline) {
                     badge.style.background = '#22c55e'; // Зеленый
                     lastSeenText.innerText = 'В сети';
                 } else {
                     badge.style.background = '#9ca3af'; // Серый
-                    const date = new Date(time).toLocaleString();
-                    lastSeenText.innerText = time ? `Был(а) в сети: ${date}` : 'Оффлайн';
+                    const dateStr = time ? new Date(time).toLocaleString() : 'давно';
+                    lastSeenText.innerText = time ? `Был(а) в сети: ${dateStr}` : 'Не в сети';
                 }
             });
         }
