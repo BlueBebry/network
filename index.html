@@ -260,9 +260,9 @@
             av.innerText = targetAlias[0].toUpperCase();
             av.style.background = getAvatarColor(targetAlias);
 
-            // Поле "О себе": если мой — разрешаем менять, если чужой — только просмотр
+            // Поле "О себе"
             const bioInput = document.getElementById('profileBioInput');
-            const bioBtn = bioInput.nextElementSibling; // Кнопка "Сохранить"
+            const bioBtn = bioInput.nextElementSibling; 
 
             if (isItMe) {
                 bioInput.readOnly = false;
@@ -272,8 +272,11 @@
                 bioBtn.style.display = 'none';
             }
 
-            // Загружаем описание из публичной ветки этого пользователя
-            gun.user(targetPub).get('profile').get('bio').once((data) => {
+            // ИСПРАВЛЕНИЕ: Ставим статус загрузки и подписываемся на живые обновления
+            bioInput.value = "Загрузка данных из P2P...";
+            
+            // Обращаемся к публичному узлу пользователя по его targetPub
+            gun.user(targetPub).get('profile').get('bio').on((data) => {
                 bioInput.value = data || (isItMe ? "" : "Пользователь еще ничего не написал о себе.");
             });
 
@@ -355,12 +358,16 @@
         // Вспомогательная функция, чтобы не ломать твою логику кнопок
         function appendPostToFeed(p, id) {
             const feed = document.getElementById('feed');
+            // Если pub нет (старый пост), попробуем сопоставить по имени, если это мы
+            const postPub = p.pub || (user.is && p.username === user.is.alias ? user.is.pub : null);
+            
             const isMe = user.is && user.is.alias === p.username;
             const isAdmin = user.is && user.is.pub === ADMIN_PUB;
 
             const html = `<div class="post card" id="${id}">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="display:flex; align-items:center; cursor:pointer;" onclick="showProfile('${p.pub}', '${p.username}')">
+                    <div style="display:flex; align-items:center; ${postPub ? 'cursor:pointer;' : 'cursor:default;'}" 
+                        onclick="${postPub ? `showProfile('${postPub}', '${p.username}')` : 'alert(\'У этого старого поста нет ID автора в базе\')'}">
                         <div class="avatar" style="background:${getAvatarColor(p.username)}">${p.username[0]}</div>
                         <strong>${p.username}</strong>
                     </div>
