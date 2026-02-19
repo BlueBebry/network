@@ -102,10 +102,9 @@
         </div>
 
         <div class="main-layout">
-            
             <div class="sidebar">
-                <button onclick="showFeed()" id="btn-feed">Лента</button>
-                <button onclick="showMyProfile()" id="btn-profile">Профиль</button>
+                <button onclick="showFeed()" id="btn-feed" style="margin-bottom: 10px;">Лента</button>
+                <button onclick="showMyProfile()" id="btn-profile" style="margin-bottom: 10px;">Профиль</button>
                 <button onclick="showChats()" id="btn-msg">Сообщения</button>
             </div>
 
@@ -120,19 +119,17 @@
                 <div id="feed"></div>
 
                 <div id="chatsListSection" class="card hidden">
-                    <p>Введите ID комнаты, чтобы войти:</p>
+                    <p>Введите ID комнаты:</p>
                     <input type="text" id="targetRoom" placeholder="Название комнаты">
                     <button onclick="openChat(document.getElementById('targetRoom').value)">Войти в чат</button>
                 </div>
 
                 <div id="activeChatSection" class="card hidden">
-                    <button onclick="showChats()" style="width: auto; padding: 6px 12px; margin-bottom: 15px; background: #e4e6eb; color: #333;">← К списку чатов</button>
-                    <h3 id="chatTitle" class="hidden">Чат</h3> <div id="chatHistory"></div>
-                    
+                    <button onclick="showChats()" style="width: auto; padding: 6px 12px; margin-bottom: 15px; background: #e4e6eb; color: #333;">← Назад</button>
+                    <div id="chatHistory"></div>
                     <div id="typingIndicator"></div>
-                    
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="msgContent" placeholder="Напишите сообщение..." oninput="handleTyping()" onkeydown="if(event.key==='Enter') sendMessage()">
+                        <input type="text" id="msgContent" placeholder="Сообщение..." oninput="handleTyping()" onkeydown="if(event.key==='Enter') sendMessage()">
                         <button onclick="sendMessage()" style="width: auto; padding: 0 20px;">Отправить</button>
                     </div>
                 </div>
