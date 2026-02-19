@@ -188,12 +188,26 @@
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
                         <div id="profileAvatar" class="avatar" style="width: 80px; height: 80px; font-size: 2em; margin: 0; display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;"></div>
                         <h2 id="profileName" style="margin: 0;">Имя пользователя</h2>
-                        <div style="width: 100%; background: #f3f4f6; padding: 15px; border-radius: 12px; font-size: 0.9em; text-align: left;">
-                            <p style="margin-bottom: 5px;"><strong>Ваш публичный ID:</strong></p>
-                            <code id="profilePub" style="word-break: break-all; color: #4f46e5; display: block; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e5e7eb;"></code>
-                            <button onclick="copyPub()" style="margin-top: 10px; background: #e4e6eb; color: #1f2937; font-size: 0.8em; padding: 5px 10px; width: auto;">Копировать ID</button>
+
+                        <div style="width: 100%; text-align: left;">
+                            <label style="font-size: 0.8em; color: gray;">О себе:</label>
+                            <textarea id="profileBioInput" placeholder="Расскажите что-нибудь о себе..." style="margin-top: 5px; height: 60px;"></textarea>
+                            <button onclick="saveBio()" style="width: auto; padding: 5px 15px; font-size: 0.8em; background: #4f46e5;">Сохранить описание</button>
                         </div>
-                        <p style="color: gray; font-size: 0.8em; margin: 0;">Этот ID уникален и подтверждает вашу личность в P2P сети.</p>
+
+                        <div style="width: 100%; background: #f3f4f6; padding: 10px; border-radius: 12px; font-size: 0.8em; text-align: left;">
+                            <details>
+                                <summary style="cursor: pointer; color: #4b5563;">Показать технический ID</summary>
+                                <code id="profilePub" style="word-break: break-all; color: #4f46e5; display: block; margin-top: 5px;"></code>
+                            </details>
+                        </div>
+
+                        <hr style="width: 100%; border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+                        
+                        <div style="width: 100%; text-align: left;">
+                            <h3 style="margin-bottom: 10px;">Мои посты</h3>
+                            <div id="myPostsContainer"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -436,14 +450,54 @@
             document.getElementById('profileSection').classList.remove('hidden');
 
             const name = user.is.alias;
-            const pub = user.is.pub;
-
             document.getElementById('profileName').innerText = name;
-            document.getElementById('profilePub').innerText = pub;
+            document.getElementById('profilePub').innerText = user.is.pub;
             
             const av = document.getElementById('profileAvatar');
             av.innerText = name[0].toUpperCase();
             av.style.background = getAvatarColor(name);
+
+            // Подгружаем "О себе" из базы
+            user.get('profile').get('bio').once((data) => {
+                document.getElementById('profileBioInput').value = data || "";
+            });
+
+            // Рендерим только свои посты
+            renderMyPosts(name);
+        }
+        function renderMyPosts(username) {
+            const container = document.getElementById('myPostsContainer');
+            container.innerHTML = '<p style="color:gray; font-size:0.8em;">Загрузка постов...</p>';
+            
+            let myPosts = [];
+            
+            // Мы берем данные из globalFeed (твоя общая лента)
+            globalFeed.once().map().once((data, id) => {
+                if (data && data.username === username && data.content !== null) {
+                    myPosts.push({...data, id: id});
+                }
+            });
+
+            // Тайм-аут, чтобы Gun успел собрать данные (так как .once().map() асинхронен)
+            setTimeout(() => {
+                container.innerHTML = '';
+                if (myPosts.length === 0) {
+                    container.innerHTML = '<p style="color:gray; font-size:0.8em;">Вы еще ничего не постили.</p>';
+                    return;
+                }
+                
+                // Сортируем: новые сверху
+                myPosts.sort((a, b) => (b.time || 0) - (a.time || 0));
+                
+                myPosts.forEach(p => {
+                    const postHtml = `
+                        <div class="post card" style="margin-bottom: 10px; border-left: 4px solid ${getAvatarColor(p.username)};">
+                            <p style="margin: 0; font-size: 0.9em;">${p.content}</p>
+                            <small style="color: gray; font-size: 0.7em;">${new Date(p.time).toLocaleString()}</small>
+                        </div>`;
+                    container.insertAdjacentHTML('beforeend', postHtml);
+                });
+            }, 500);
         }
         function deletePost(id) {
             if (!confirm('Удалить этот пост?')) return;
@@ -459,6 +513,16 @@
             const pub = document.getElementById('profilePub').innerText;
             navigator.clipboard.writeText(pub).then(() => {
                 alert("ID скопирован в буфер обмена!");
+            });
+        }
+        // 1. Сохранение "О себе" в Gun.js
+        function saveBio() {
+            const bioText = document.getElementById('profileBioInput').value;
+            if (!user.is) return;
+            // Сохраняем данные в личный узел пользователя
+            user.get('profile').get('bio').put(bioText, (ack) => {
+                if (ack.err) alert("Ошибка сохранения");
+                else alert("Описание обновлено!");
             });
         }
         setInterval(() => {
