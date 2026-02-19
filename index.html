@@ -230,22 +230,63 @@
             feedEl.classList.remove('hidden');
             feedEl.innerHTML = '';
 
+            let postsArray = []; // Массив для хранения и сортировки
+
             globalFeed.map().on((data, id) => {
-                const el = document.getElementById(id);
-                
-                // Если данных нет (null) или контент пустой — удаляем из верстки
-                if (!data || data.content === null || data === null) {
+                if (!data || data.content === null) {
+                    const el = document.getElementById(id);
                     if (el) el.remove();
+                    // Удаляем из массива, если пост был удален
+                    postsArray = postsArray.filter(p => p.id !== id);
                     return;
                 }
-                
-                // Если пост есть — рисуем
-                if (data.content) {
-                    renderPost(data, id);
+
+                // Создаем объект поста с его ID
+                const postData = { ...data, id: id };
+
+                // Проверяем, есть ли уже такой пост в массиве
+                const existingIndex = postsArray.findIndex(p => p.id === id);
+                if (existingIndex !== -1) {
+                    postsArray[existingIndex] = postData; // Обновляем данные
+                } else {
+                    postsArray.push(postData); // Добавляем новый
                 }
+
+                // СОРТИРОВКА: новые (большее время) в начало
+                postsArray.sort((a, b) => (b.time || 0) - (a.time || 0));
+
+                // Отрисовка всей ленты заново для соблюдения порядка
+                // (Для маленьких лент это ок, для гигантских потом оптимизируем)
+                renderFullFeed(postsArray);
             });
         }
+        function renderFullFeed(posts) {
+            const feedEl = document.getElementById('feed');
+            feedEl.innerHTML = '';
+            posts.forEach(p => {
+                // Используем твою существующую renderPost, 
+                // но немного изменим её, чтобы она просто возвращала HTML или вставляла в конец
+                appendPostToFeed(p, p.id);
+            });
+        }
+        // Вспомогательная функция, чтобы не ломать твою логику кнопок
+        function appendPostToFeed(p, id) {
+            const feed = document.getElementById('feed');
+            const isMe = user.is && user.is.alias === p.username;
+            const isAdmin = user.is && user.is.pub === ADMIN_PUB;
 
+            const html = `<div class="post card" id="${id}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center;">
+                        <div class="avatar" style="background:${getAvatarColor(p.username)}">${p.username[0]}</div>
+                        <strong>${p.username}</strong>
+                    </div>
+                    ${(isMe || isAdmin) ? `<button onclick="deletePost('${id}')" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:0.75em;">Удалить</button>` : ''}
+                </div>
+                <p style="padding-left:52px; margin:0;">${p.content}</p>
+            </div>`;
+            feed.insertAdjacentHTML('beforeend', html); // Вставляем в конец текущей очереди отрисовки
+        }
         // CHAT & TYPING
         function handleTyping() {
             if (!currentRoom || !user.is) return;
@@ -337,7 +378,8 @@
         // Новая функция для удаления сообщений в чате
         function deleteChatMessage(msgId) {
             if (!confirm('Удалить это сообщение для всех?')) return;
-            currentRoom.get(msgId).put(null);
+            // Указываем правильный путь через .get('messages')
+            currentRoom.get('messages').get(msgId).put(null); 
             const el = document.getElementById(msgId);
             if (el) el.remove();
         }
