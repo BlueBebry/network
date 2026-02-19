@@ -187,7 +187,14 @@
                 <div id="profileSection" class="card hidden">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
                         <div id="profileAvatar" class="avatar" style="width: 80px; height: 80px; font-size: 2em; margin: 0; display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;"></div>
-                        <h2 id="profileName" style="margin: 0;">Имя пользователя</h2>
+                        
+                        <div style="text-align: center;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <h2 id="profileName" style="margin: 0;">Имя пользователя</h2>
+                                <div id="onlineStatusBadge" title="Статус" style="width: 12px; height: 12px; border-radius: 50%; background: gray; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.1); transition: background 0.3s ease;"></div>
+                            </div>
+                            <div id="lastSeenText" style="font-size: 0.75em; color: gray; margin-top: 4px;"></div>
+                        </div>
 
                         <div style="width: 100%; text-align: left;">
                             <label style="font-size: 0.8em; color: gray;">О себе:</label>
@@ -286,6 +293,24 @@
 
             // Загружаем посты
             renderMyPosts(targetAlias);
+
+            // --- ЛОГИКА ОНЛАЙНА ---
+            const badge = document.getElementById('onlineStatusBadge');
+            const lastSeenText = document.getElementById('lastSeenText');
+            
+            // Подписываемся на последнее время активности пользователя
+            gun.user(targetPub).get('profile').get('lastSeen').on((time) => {
+                const isOnline = Date.now() - time < 30000; // Если активность была меньше 30 сек назад
+                
+                if (isOnline) {
+                    badge.style.background = '#22c55e'; // Зеленый
+                    lastSeenText.innerText = 'В сети';
+                } else {
+                    badge.style.background = '#9ca3af'; // Серый
+                    const date = new Date(time).toLocaleString();
+                    lastSeenText.innerText = time ? `Был(а) в сети: ${date}` : 'Оффлайн';
+                }
+            });
         }
         user.recall({storage: true}, (ack) => { if (user.is) showApp(); });
         function showApp() {
@@ -293,8 +318,18 @@
             document.getElementById('userSection').classList.remove('hidden');
             document.getElementById('welcomeMsg').innerText = `Привет, ${user.is.alias}!`;
             showFeed();
+            startHeartbeat();
         }
-
+        function startHeartbeat() {
+            if (!user.is) return;
+            
+            const updateStatus = () => {
+                user.get('profile').get('lastSeen').put(Date.now());
+            };
+            
+            updateStatus(); // Обновляем сразу
+            setInterval(updateStatus, 10000); // И потом каждые 10 секунд
+        }
         // FEED (ГЛАВНОЕ ИСПРАВЛЕНИЕ ТУТ)
         function sendPost() {
             const val = document.getElementById('postContent').value;
