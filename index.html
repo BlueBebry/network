@@ -170,6 +170,7 @@
 
     <script>
         const gun = Gun({ peers: ['https://my-p2p-relay.onrender.com/gun'] });
+        const ADMIN_PUB = 'Zh8npbdquBdVDtKm_JPh5IN7Lusq7V9DIMHZZqRgX_g.EF23noK_Fs0USXGJmH3P9GGfel2goGF8EKMtm53Y5sE';
         const user = gun.user().recall({storage: true});
         const globalFeed = gun.get('my-p2p-social-feed-v1');
         let currentRoom = null;
@@ -300,14 +301,18 @@
             if (document.getElementById(id)) return;
             const feed = document.getElementById('feed');
             if (!feed) return;
+
+            // ПРОВЕРКА: автор поста ИЛИ текущий залогиненный юзер — админ
             const isMe = user.is && user.is.alias === p.username;
+            const isAdmin = user.is && user.is.pub === ADMIN_PUB;
+
             const html = `<div class="post card" id="${id}">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <div style="display:flex; align-items:center;">
                         <div class="avatar" style="background:${getAvatarColor(p.username)}">${p.username[0]}</div>
                         <strong>${p.username}</strong>
                     </div>
-                    ${isMe ? `<button onclick="deletePost('${id}')" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:0.75em;">Удалить</button>` : ''}
+                    ${(isMe || isAdmin) ? `<button onclick="deletePost('${id}')" style="width:auto; background:#fee2e2; color:#ef4444; border:none; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:0.75em;">Удалить</button>` : ''}
                 </div>
                 <p style="padding-left:52px; margin:0;">${p.content}</p>
             </div>`;
