@@ -245,42 +245,46 @@
         async function showProfile(targetPub, targetAlias) {
             hideAll();
             
-            // Определяем, мой это профиль или чужой
             const isItMe = user.is && targetPub === user.is.pub;
             
             document.getElementById('viewTitle').innerText = isItMe ? 'Мой профиль' : 'Профиль ' + targetAlias;
             document.getElementById('profileSection').classList.remove('hidden');
 
-            // Заполняем имя и ID
             document.getElementById('profileName').innerText = targetAlias;
-            document.getElementById('profilePub').innerText = targetPub;
+            document.getElementById('profilePub').innerText = targetPub || "ID отсутствует";
             
-            // Аватар
             const av = document.getElementById('profileAvatar');
-            av.innerText = targetAlias[0].toUpperCase();
-            av.style.background = getAvatarColor(targetAlias);
+            av.innerText = targetAlias ? targetAlias[0].toUpperCase() : "?";
+            av.style.background = getAvatarColor(targetAlias || "anon");
 
-            // Поле "О себе"
             const bioInput = document.getElementById('profileBioInput');
-            const bioBtn = bioInput.nextElementSibling; 
+            const bioBtn = document.getElementById('profileSection').querySelector('button'); 
 
             if (isItMe) {
                 bioInput.readOnly = false;
-                bioBtn.style.display = 'block';
+                if (bioBtn) bioBtn.style.display = 'block';
             } else {
                 bioInput.readOnly = true;
-                bioBtn.style.display = 'none';
+                if (bioBtn) bioBtn.style.display = 'none';
             }
 
-            // ИСПРАВЛЕНИЕ: Ставим статус загрузки и подписываемся на живые обновления
-            bioInput.value = "Загрузка данных из P2P...";
+            // --- НОВАЯ ЛОГИКА ЗАГЛУШКИ ---
+            // Сразу ставим нейтральный текст, чтобы не пугать пользователя загрузкой
+            bioInput.value = isItMe ? "" : "Пользователь пока не добавил информацию о себе.";
             
-            // Обращаемся к публичному узлу пользователя по его targetPub
-            gun.user(targetPub).get('profile').get('bio').on((data) => {
-                bioInput.value = data || (isItMe ? "" : "Пользователь еще ничего не написал о себе.");
-            });
+            // Если это наш профиль, пробуем подтянуть данные локально (быстро)
+            if (isItMe) {
+                user.get('profile').get('bio').once((data) => {
+                    if (data) bioInput.value = data;
+                });
+            } else {
+                // Если чужой, ищем в сети. Если найдем — текст обновится сам.
+                gun.user(targetPub).get('profile').get('bio').once((data) => {
+                    if (data) bioInput.value = data;
+                });
+            }
 
-            // Загружаем посты этого конкретного пользователя
+            // Загружаем посты
             renderMyPosts(targetAlias);
         }
         user.recall({storage: true}, (ack) => { if (user.is) showApp(); });
