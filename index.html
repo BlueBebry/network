@@ -197,7 +197,7 @@
 
                         <div style="width: 100%; background: #f3f4f6; padding: 10px; border-radius: 12px; font-size: 0.8em; text-align: left;">
                             <details>
-                                <summary style="cursor: pointer; color: #4b5563;">Показать технический ID</summary>
+                                <summary style="cursor: pointer; color: #4b5563;">Показать ID</summary>
                                 <code id="profilePub" style="word-break: break-all; color: #4f46e5; display: block; margin-top: 5px;"></code>
                             </details>
                         </div>
@@ -242,6 +242,44 @@
                 else { alert("Создано! Войдите."); toggleAuth(); }
             });
         }
+        async function showProfile(targetPub, targetAlias) {
+            hideAll();
+            
+            // Определяем, мой это профиль или чужой
+            const isItMe = user.is && targetPub === user.is.pub;
+            
+            document.getElementById('viewTitle').innerText = isItMe ? 'Мой профиль' : 'Профиль ' + targetAlias;
+            document.getElementById('profileSection').classList.remove('hidden');
+
+            // Заполняем имя и ID
+            document.getElementById('profileName').innerText = targetAlias;
+            document.getElementById('profilePub').innerText = targetPub;
+            
+            // Аватар
+            const av = document.getElementById('profileAvatar');
+            av.innerText = targetAlias[0].toUpperCase();
+            av.style.background = getAvatarColor(targetAlias);
+
+            // Поле "О себе": если мой — разрешаем менять, если чужой — только просмотр
+            const bioInput = document.getElementById('profileBioInput');
+            const bioBtn = bioInput.nextElementSibling; // Кнопка "Сохранить"
+
+            if (isItMe) {
+                bioInput.readOnly = false;
+                bioBtn.style.display = 'block';
+            } else {
+                bioInput.readOnly = true;
+                bioBtn.style.display = 'none';
+            }
+
+            // Загружаем описание из публичной ветки этого пользователя
+            gun.user(targetPub).get('profile').get('bio').once((data) => {
+                bioInput.value = data || (isItMe ? "" : "Пользователь еще ничего не написал о себе.");
+            });
+
+            // Загружаем посты этого конкретного пользователя
+            renderMyPosts(targetAlias);
+        }
         user.recall({storage: true}, (ack) => { if (user.is) showApp(); });
         function showApp() {
             document.getElementById('authSection').classList.add('hidden');
@@ -253,17 +291,16 @@
         // FEED (ГЛАВНОЕ ИСПРАВЛЕНИЕ ТУТ)
         function sendPost() {
             const val = document.getElementById('postContent').value;
-            if (!val) return;
+            if (!val || !user.is) return;
             
-            // Генерируем уникальный ID для поста сами
             const postId = Gun.text.random(16);
             
-            // Публикуем в ленту по конкретному ключу
             globalFeed.get(postId).put({
                 username: user.is.alias,
+                pub: user.is.pub, // ОБЯЗАТЕЛЬНО сохраняем ключ автора
                 content: val,
                 time: Date.now(),
-                id: postId // сохраняем id внутри для удобства
+                id: postId
             });
             
             document.getElementById('postContent').value = '';
@@ -323,7 +360,7 @@
 
             const html = `<div class="post card" id="${id}">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; cursor:pointer;" onclick="showProfile('${p.pub}', '${p.username}')">
                         <div class="avatar" style="background:${getAvatarColor(p.username)}">${p.username[0]}</div>
                         <strong>${p.username}</strong>
                     </div>
@@ -331,7 +368,7 @@
                 </div>
                 <p style="padding-left:52px; margin:0;">${p.content}</p>
             </div>`;
-            feed.insertAdjacentHTML('beforeend', html); // Вставляем в конец текущей очереди отрисовки
+            feed.insertAdjacentHTML('beforeend', html);
         }
         // CHAT & TYPING
         function handleTyping() {
@@ -443,27 +480,7 @@
         function logout() { user.leave(); location.reload(); }
         function showChats() { hideAll(); document.getElementById('viewTitle').innerText = 'Сообщения'; document.getElementById('chatsListSection').classList.remove('hidden'); }
         function showMyProfile() {
-            hideAll();
-            if (!user.is) return;
-
-            document.getElementById('viewTitle').innerText = 'Мой профиль';
-            document.getElementById('profileSection').classList.remove('hidden');
-
-            const name = user.is.alias;
-            document.getElementById('profileName').innerText = name;
-            document.getElementById('profilePub').innerText = user.is.pub;
-            
-            const av = document.getElementById('profileAvatar');
-            av.innerText = name[0].toUpperCase();
-            av.style.background = getAvatarColor(name);
-
-            // Подгружаем "О себе" из базы
-            user.get('profile').get('bio').once((data) => {
-                document.getElementById('profileBioInput').value = data || "";
-            });
-
-            // Рендерим только свои посты
-            renderMyPosts(name);
+            if (user.is) showProfile(user.is.pub, user.is.alias);
         }
         function renderMyPosts(username) {
             const container = document.getElementById('myPostsContainer');
