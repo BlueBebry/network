@@ -184,6 +184,18 @@
                         <button onclick="sendMessage()" style="width: auto; padding: 0 20px;">Отправить</button>
                     </div>
                 </div>
+                <div id="profileSection" class="card hidden">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                        <div id="profileAvatar" class="avatar" style="width: 80px; height: 80px; font-size: 2em; margin: 0; display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;"></div>
+                        <h2 id="profileName" style="margin: 0;">Имя пользователя</h2>
+                        <div style="width: 100%; background: #f3f4f6; padding: 15px; border-radius: 12px; font-size: 0.9em; text-align: left;">
+                            <p style="margin-bottom: 5px;"><strong>Ваш публичный ID:</strong></p>
+                            <code id="profilePub" style="word-break: break-all; color: #4f46e5; display: block; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e5e7eb;"></code>
+                            <button onclick="copyPub()" style="margin-top: 10px; background: #e4e6eb; color: #1f2937; font-size: 0.8em; padding: 5px 10px; width: auto;">Копировать ID</button>
+                        </div>
+                        <p style="color: gray; font-size: 0.8em; margin: 0;">Этот ID уникален и подтверждает вашу личность в P2P сети.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -405,12 +417,34 @@
         }
 
         // HELPERS
-        function hideAll() { ['postFormCard', 'feed', 'chatsListSection', 'activeChatSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        function hideAll() { 
+            // Добавили 'profileSection' в список скрытия
+            ['postFormCard', 'feed', 'chatsListSection', 'activeChatSection', 'profileSection'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden');
+            }); 
+        }
         function getAvatarColor(n) { const c = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444']; let h = 0; for (let i=0; i<n.length; i++) h = n.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
         function toggleAuth() { document.getElementById('loginForm').classList.toggle('hidden'); document.getElementById('registerForm').classList.toggle('hidden'); }
         function logout() { user.leave(); location.reload(); }
         function showChats() { hideAll(); document.getElementById('viewTitle').innerText = 'Сообщения'; document.getElementById('chatsListSection').classList.remove('hidden'); }
-        function showMyProfile() { alert("Ваш ник: " + user.is.alias); }
+        function showMyProfile() {
+            hideAll();
+            if (!user.is) return;
+
+            document.getElementById('viewTitle').innerText = 'Мой профиль';
+            document.getElementById('profileSection').classList.remove('hidden');
+
+            const name = user.is.alias;
+            const pub = user.is.pub;
+
+            document.getElementById('profileName').innerText = name;
+            document.getElementById('profilePub').innerText = pub;
+            
+            const av = document.getElementById('profileAvatar');
+            av.innerText = name[0].toUpperCase();
+            av.style.background = getAvatarColor(name);
+        }
         function deletePost(id) {
             if (!confirm('Удалить этот пост?')) return;
             
@@ -420,6 +454,12 @@
             // Для надежности сразу скрываем из DOM
             const el = document.getElementById(id);
             if (el) el.remove();
+        }
+        function copyPub() {
+            const pub = document.getElementById('profilePub').innerText;
+            navigator.clipboard.writeText(pub).then(() => {
+                alert("ID скопирован в буфер обмена!");
+            });
         }
         setInterval(() => {
             if (gun && gun._ && gun._.opt && gun._.opt.peers) {
