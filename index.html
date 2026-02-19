@@ -79,44 +79,48 @@
             .sidebar {
                 width: 100%; 
                 flex-direction: row; 
-                gap: 8px;
+                gap: 8px; /* Расстояние МЕЖДУ кнопками будет абсолютно сквозным */
                 position: sticky; 
                 top: 0;
-                z-index: 100; /* Чтобы было поверх всего */
+                z-index: 100;
                 
-                /* Убираем фон совсем или делаем легкое размытие */
-                background: rgba(243, 244, 246, 0.8); 
-                backdrop-filter: blur(10px); /* Эффект матового стекла */
-                -webkit-backdrop-filter: blur(10px);
-                
+                /* Убираем всё лишнее, оставляем только пустоту */
+                background: transparent !important; 
+                box-shadow: none !important;
                 padding: 10px 0;
-                margin: 0 -10px; /* Чтобы панель была во всю ширину */
-                padding: 10px;
+                margin: 0;
             }
 
             .sidebar button {
-                /* Делаем кнопки нежно-серыми и полупрозрачными */
-                background: rgba(0, 0, 0, 0.05); 
-                color: #4b5563;
-                border: 1px solid rgba(0, 0, 0, 0.05);
+                /* Стеклянный эффект для каждой отдельной кнопки */
+                background: rgba(255, 255, 255, 0.7) !important; 
+                backdrop-filter: blur(12px); 
+                -webkit-backdrop-filter: blur(12px);
+                
+                color: #1f2937;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
                 
                 margin-bottom: 0; 
                 flex: 1;           
-                height: 42px;      
+                height: 44px;      
                 font-size: 13px;
                 border-radius: 12px;
-                transition: all 0.2s ease;
+                font-weight: 600;
             }
             
-            /* Стиль для нажатой кнопки (опционально) */
+            /* Эффект при нажатии */
             .sidebar button:active {
-                background: rgba(0, 0, 0, 0.1);
-                transform: scale(0.95);
+                background: rgba(255, 255, 255, 0.9) !important;
+                transform: scale(0.96);
             }
-            
+
             .header h2 { font-size: 1.2rem; }
             .card { padding: 15px; }
             #chatHistory { height: 65vh; }
+            
+            /* Чтобы контент не прилипал к кнопкам сверху при скролле */
+            .content-area { padding-top: 5px; }
             .post { padding: 12px; }
             .post p { padding-left: 0; margin-top: 10px; } /* Текст поста под аватаркой для экономии места */
         }
