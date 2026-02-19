@@ -2,25 +2,77 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Моя P2P Соцсеть</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; max-width: 800px; margin: 20px auto; background: #f3f4f6; color: #1f2937; padding: 10px; line-height: 1.5; }
+        /* Общие стили (база) */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            max-width: 800px; 
+            margin: 20px auto; 
+            background: #f3f4f6; 
+            color: #1f2937; 
+            padding: 10px; 
+            line-height: 1.5; 
+        }
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
         .post { background: white; padding: 15px; margin-bottom: 15px; border-radius: 16px; border-left: 6px solid #4f46e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e5e7eb; border-radius: 10px; outline: none; box-sizing: border-box; }
-        button { background: #4f46e5; color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: 600; }
-        button:hover { background: #4338ca; }
+        
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e5e7eb; border-radius: 10px; outline: none; box-sizing: border-box; font-size: 16px; /* Предотвращает зум на iPhone */ }
+        button { background: #4f46e5; color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: 600; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        
         .hidden { display: none !important; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .avatar { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 12px; text-transform: uppercase; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
+        
         #chatHistory { height: 400px; overflow-y: auto; border: 1px solid #f3f4f6; padding: 15px; background: #ffffff; display: flex; flex-direction: column; margin-bottom: 10px; border-radius: 12px; }
-        .msg { margin-bottom: 10px; padding: 10px 16px; border-radius: 18px; max-width: 80%; }
+        .msg { margin-bottom: 10px; padding: 10px 16px; border-radius: 18px; max-width: 85%; font-size: 14px; }
         .msg-in { background: #f3f4f6; align-self: flex-start; border-bottom-left-radius: 4px; }
         .msg-out { background: #4f46e5; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .status-bar { font-size: 0.7em; color: gray; text-align: right; margin-bottom: 10px; }
+        .status-bar { font-size: 11px; color: gray; text-align: right; margin-bottom: 10px; }
+
+        /* Контейнер для меню и контента */
+        .main-layout { display: flex; gap: 20px; }
+        .sidebar { width: 160px; flex-shrink: 0; }
+        .content-area { flex-grow: 1; }
+
+        /* --- АДАПТИВ ПОД ТЕЛЕФОНЫ --- */
+        @media (max-width: 600px) {
+            body { margin: 0; padding: 10px; }
+            
+            /* Переключаем меню из колонки в ряд */
+            .main-layout { flex-direction: column; gap: 10px; }
+            .sidebar { 
+                width: 100%; 
+                display: flex; 
+                gap: 8px; 
+                position: sticky; 
+                top: 0; 
+                background: #f3f4f6; 
+                z-index: 10; 
+                padding: 5px 0;
+            }
+            .sidebar button { 
+                margin-bottom: 0; 
+                flex: 1; /* Растягивает кнопки поровну на всю ширину */
+                background: #ffffff; /* Делаем кнопки светлыми на фоне body */
+                color: #1f2937;
+                border: 1px solid #e5e7eb;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            
+            .header h2 { font-size: 1.2rem; }
+            .card { padding: 15px; }
+            
+            #chatHistory { height: 60vh; /* Больше места под чат на мобиле */ }
+            
+            .post { padding: 12px; }
+            .post p { padding-left: 0; margin-top: 10px; } /* Текст поста под аватаркой для экономии места */
+        }
     </style>
 </head>
 <body>
@@ -46,38 +98,42 @@
     <div id="userSection" class="hidden">
         <div class="header">
             <h2 id="welcomeMsg">Привет!</h2>
-            <button onclick="logout()" style="width: auto; background: #606770;">Выйти</button>
+            <button onclick="logout()" style="width: auto; background: #606770; padding: 8px 15px;">Выйти</button>
         </div>
 
-        <div style="display: flex; gap: 20px;">
-            <div style="width: 150px; flex-shrink: 0;">
-                <button onclick="showFeed()" style="margin-bottom: 10px; background: #e4e6eb; color: black;">Лента</button>
-                <button onclick="showMyProfile()" style="margin-bottom: 10px; background: #e4e6eb; color: black;">Профиль</button>
-                <button onclick="showChats()" style="background: #e4e6eb; color: black;">Сообщения</button>
+        <div class="main-layout">
+            
+            <div class="sidebar">
+                <button onclick="showFeed()" id="btn-feed">Лента</button>
+                <button onclick="showMyProfile()" id="btn-profile">Профиль</button>
+                <button onclick="showChats()" id="btn-msg">Сообщения</button>
             </div>
 
-            <div style="flex-grow: 1;">
+            <div class="content-area">
                 <h3 id="viewTitle">Лента новостей</h3>
+                
                 <div id="postFormCard" class="card">
                     <textarea id="postContent" placeholder="Что у вас нового?"></textarea>
                     <button onclick="sendPost()">Опубликовать в P2P</button>
                 </div>
+
                 <div id="feed"></div>
 
                 <div id="chatsListSection" class="card hidden">
-                    <p>Введите ID комнаты:</p>
+                    <p>Введите ID комнаты, чтобы войти:</p>
                     <input type="text" id="targetRoom" placeholder="Название комнаты">
                     <button onclick="openChat(document.getElementById('targetRoom').value)">Войти в чат</button>
                 </div>
 
                 <div id="activeChatSection" class="card hidden">
-                    <button onclick="showChats()" style="width: auto; padding: 5px 10px; margin-bottom: 10px; background: #eee; color: #333;">← Назад</button>
-                    <h3 id="chatTitle">Чат</h3>
-                    <div id="chatHistory"></div>
-                    <div id="typingIndicator" style="font-size: 0.8em; color: #4f46e5; height: 20px; font-style: italic; font-weight: 600;"></div>
-                    <div style="display: flex; gap: 5px;">
-                        <input type="text" id="msgContent" placeholder="Сообщение..." oninput="handleTyping()" onkeydown="if(event.key==='Enter') sendMessage()">
-                        <button onclick="sendMessage()" style="width: auto;">Отправить</button>
+                    <button onclick="showChats()" style="width: auto; padding: 6px 12px; margin-bottom: 15px; background: #e4e6eb; color: #333;">← К списку чатов</button>
+                    <h3 id="chatTitle" class="hidden">Чат</h3> <div id="chatHistory"></div>
+                    
+                    <div id="typingIndicator"></div>
+                    
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="msgContent" placeholder="Напишите сообщение..." oninput="handleTyping()" onkeydown="if(event.key==='Enter') sendMessage()">
+                        <button onclick="sendMessage()" style="width: auto; padding: 0 20px;">Отправить</button>
                     </div>
                 </div>
             </div>
