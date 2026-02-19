@@ -70,37 +70,53 @@
         .content-area { flex-grow: 1; }
 
         /* --- АДАПТИВ ПОД ТЕЛЕФОНЫ --- */
+        /* --- АДАПТИВ ПОД ТЕЛЕФОНЫ --- */
         @media (max-width: 600px) {
             body { margin: 0; padding: 10px; }
             
-            /* Переключаем меню из колонки в ряд */
             .main-layout { flex-direction: column; gap: 10px; }
+            
             .sidebar {
-                width: 100%; /* На весь экран */
-                flex-direction: row; /* А на телефоне — В РЯД */
-                gap: 5px;
-                position: sticky; /* Чтобы меню не улетало при скролле */
+                width: 100%; 
+                flex-direction: row; 
+                gap: 8px;
+                position: sticky; 
                 top: 0;
-                z-index: 10;
-                background: #f3f4f6;
+                z-index: 100; /* Чтобы было поверх всего */
+                
+                /* Убираем фон совсем или делаем легкое размытие */
+                background: rgba(243, 244, 246, 0.8); 
+                backdrop-filter: blur(10px); /* Эффект матового стекла */
+                -webkit-backdrop-filter: blur(10px);
+                
+                padding: 10px 0;
+                margin: 0 -10px; /* Чтобы панель была во всю ширину */
+                padding: 10px;
             }
 
             .sidebar button {
-                background: #e4e6eb;
+                /* Делаем кнопки нежно-серыми и полупрозрачными */
+                background: rgba(0, 0, 0, 0.05); 
+                color: #4b5563;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+                
                 margin-bottom: 0; 
-                flex: 1;           /* Растягиваем поровну по ширине */
-                height: 40px;      /* На мобилке можно чуть пониже */
+                flex: 1;           
+                height: 42px;      
                 font-size: 13px;
-                padding: 0 5px;    /* Минимум падингов, чтобы текст влез */
-                background: white;
-                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                transition: all 0.2s ease;
+            }
+            
+            /* Стиль для нажатой кнопки (опционально) */
+            .sidebar button:active {
+                background: rgba(0, 0, 0, 0.1);
+                transform: scale(0.95);
             }
             
             .header h2 { font-size: 1.2rem; }
             .card { padding: 15px; }
-            
-            #chatHistory { height: 60vh; /* Больше места под чат на мобиле */ }
-            
+            #chatHistory { height: 65vh; }
             .post { padding: 12px; }
             .post p { padding-left: 0; margin-top: 10px; } /* Текст поста под аватаркой для экономии места */
         }
