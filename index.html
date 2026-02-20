@@ -541,7 +541,7 @@
         function getAvatarColor(n) { const c = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444']; let h = 0; for (let i=0; i<n.length; i++) h = n.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
         function toggleAuth() { document.getElementById('loginForm').classList.toggle('hidden'); document.getElementById('registerForm').classList.toggle('hidden'); }
         function logout() { user.leave(); location.reload(); }
-        function showChats() { hideAll(); document.getElementById('viewTitle').innerText = 'Сообщения'; document.getElementById('chatsListSection').classList.remove('hidden'); }
+        function showChats() { hideAll(); document.getElementById('viewTitle').innerText = 'Сообщения'; document.getElementById('chatsListSection').classList.remove('hidden'); loadRecentChats();}
         function showMyProfile() {
             if (user.is) showProfile(user.is.pub, user.is.alias);
         }
