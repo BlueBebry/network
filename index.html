@@ -627,30 +627,54 @@
             const listEl = document.getElementById('recentChatsList');
             if (!listEl || !user.is) return;
             
-            listEl.innerHTML = ''; // Очищаем перед обновлением
+            listEl.innerHTML = ''; 
 
             user.get('recentRooms').map().on((data, name) => {
-                if (!data || !data.name) return;
-                
-                // Чтобы не дублировать кнопки в интерфейсе
-                if (document.getElementById('recent-' + name)) return;
+                // Если данных нет (удалено) или кнопка уже отрисована — пропускаем
+                if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
+                // Создаем контейнер для кнопки чата и кнопки удаления
+                const container = document.createElement('div');
+                container.id = 'recent-' + name;
+                container.style.cssText = "display: flex; gap: 5px; align-items: center;";
+
+                // Основная кнопка входа в чат
                 const btn = document.createElement('button');
-                btn.id = 'recent-' + name;
-                btn.innerHTML = `<span style="color: #6366f1;">#</span> ${name}`;
-                btn.style.cssText = "background: white; color: #1f2937; text-align: left; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer; transition: all 0.2s; font-size: 0.95em;";
-                
-                // Эффект при наведении
-                btn.onmouseover = () => btn.style.borderColor = "#6366f1";
-                btn.onmouseout = () => btn.style.borderColor = "#e5e7eb";
-                
+                btn.innerHTML = `<span style="color: #6366f1; margin-right: 5px;">#</span>${name}`;
+                btn.style.cssText = "flex-grow: 1; background: #f9fafb; color: #1f2937; text-align: left; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; cursor: pointer; font-size: 0.9em;";
                 btn.onclick = () => {
                     document.getElementById('targetRoom').value = name;
                     openChat(name);
                 };
+
+                // Кнопка удаления (крестик)
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = '✕';
+                delBtn.style.cssText = "background: none; border: none; color: #9ca3af; cursor: pointer; padding: 5px 10px; font-size: 1.1em; transition: color 0.2s;";
+                delBtn.onmouseover = () => delBtn.style.color = "#ef4444";
+                delBtn.onmouseout = () => delBtn.style.color = "#9ca3af";
                 
-                listEl.appendChild(btn);
+                delBtn.onclick = (e) => {
+                    e.stopPropagation(); // Чтобы не сработал вход в чат при нажатии на крестик
+                    removeRecentChat(name);
+                };
+
+                container.appendChild(btn);
+                container.appendChild(delBtn);
+                listEl.appendChild(container);
             });
+        }
+        function removeRecentChat(roomName) {
+            if (!user.is || !roomName) return;
+            
+            // В Gun.js удаление происходит путем записи null в узел
+            user.get('recentRooms').get(roomName).put(null);
+            
+            // Удаляем элемент из интерфейса сразу
+            const el = document.getElementById('recent-' + roomName);
+            if (el) el.remove();
+            
+            console.log(`Комната ${roomName} удалена из списка`);
         }
     </script>
 </body>
