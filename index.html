@@ -632,7 +632,7 @@
             user.get('recentRooms').map().on((data, name) => {
                 if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
-                // 1. Контейнер на всю ширину карточки
+                // Контейнер-плашка на всю ширину
                 const container = document.createElement('div');
                 container.id = 'recent-' + name;
                 container.style.cssText = `
@@ -647,11 +647,12 @@
                     transition: all 0.2s;
                 `;
 
-                // 2. Кнопка с текстом (flex: 1 заставляет её растянуться до упора вправо)
+                // Кнопка чата (Flex: 1 и width: 100% выталкивают всё остальное в край)
                 const btn = document.createElement('button');
                 btn.innerHTML = `<span style="color: #6366f1; font-weight: bold; margin-right: 8px;">#</span>${name}`;
                 btn.style.cssText = `
-                    flex: 1; 
+                    flex: 1;
+                    width: 100%;
                     background: none; 
                     border: none; 
                     color: #1f2937; 
@@ -667,7 +668,7 @@
                     openChat(name);
                 };
 
-                // 3. Кнопка-крестик (теперь она будет прижата к самому краю)
+                // Кнопка удаления (теперь будет строго справа)
                 const delBtn = document.createElement('button');
                 delBtn.innerHTML = '✕';
                 delBtn.style.cssText = `
@@ -682,7 +683,7 @@
                     align-items: center;
                 `;
 
-                // Интерактив (подсветка всей плашки)
+                // Визуальные эффекты
                 container.onmouseover = () => {
                     container.style.borderColor = "#6366f1";
                     container.style.background = "#fff";
