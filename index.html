@@ -632,39 +632,34 @@
             user.get('recentRooms').map().on((data, name) => {
                 if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
-                // Контейнер на всю ширину
+                // Контейнер с относительным позиционированием
                 const container = document.createElement('div');
                 container.id = 'recent-' + name;
                 container.style.cssText = `
+                    position: relative; 
                     display: flex; 
-                    justify-content: space-between; /* РАЗВОДИТ ЭЛЕМЕНТЫ ПО КРАЯМ */
                     align-items: center; 
                     background: #f9fafb; 
                     border: 1px solid #e5e7eb; 
                     border-radius: 12px; 
                     margin-bottom: 8px;
                     width: 100%; 
-                    box-sizing: border-box; /* Чтобы padding не раздувал ширину */
-                    overflow: hidden;
                     transition: all 0.2s;
                 `;
 
-                // Кнопка с текстом
+                // Кнопка чата (с большим отступом справа, чтобы текст не залез под крестик)
                 const btn = document.createElement('button');
                 btn.innerHTML = `<span style="color: #6366f1; font-weight: bold; margin-right: 8px;">#</span>${name}`;
                 btn.style.cssText = `
-                    flex: 1; /* Позволяет кнопке занять всё свободное место */
+                    width: 100%;
                     background: none; 
                     border: none; 
                     color: #1f2937; 
                     text-align: left; 
-                    padding: 14px 16px; 
+                    padding: 14px 50px 14px 16px; 
                     cursor: pointer; 
                     font-size: 0.95em;
                     font-weight: 500;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
                 `;
                 
                 btn.onclick = () => {
@@ -672,27 +667,28 @@
                     openChat(name);
                 };
 
-                // Кнопка-крестик (теперь точно будет справа)
+                // Кнопка-крестик (ПРИНУДИТЕЛЬНО ПРИЖАТА ВПРАВО)
                 const delBtn = document.createElement('button');
                 delBtn.innerHTML = '✕';
                 delBtn.style.cssText = `
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
                     background: none; 
                     border: none; 
                     color: #d1d5db; 
                     cursor: pointer; 
-                    padding: 0 16px; 
-                    min-width: 45px; /* Чтобы область клика была стабильной */
+                    padding: 10px;
                     font-size: 1.1em;
                     transition: color 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    z-index: 10;
                 `;
 
-                // Визуальные эффекты при наведении
+                // Эффекты
                 container.onmouseover = () => {
                     container.style.borderColor = "#6366f1";
-                    container.style.background = "#ffffff";
+                    container.style.background = "#fff";
                     delBtn.style.color = "#9ca3af";
                 };
                 container.onmouseout = () => {
