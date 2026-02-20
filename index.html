@@ -173,6 +173,10 @@
                     <p>Введите ID комнаты:</p>
                     <input type="text" id="targetRoom" placeholder="Название комнаты">
                     <button onclick="openChat(document.getElementById('targetRoom').value)">Войти в чат</button>
+                    <div id="recentChatsSection" style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px;">
+                        <p style="font-size: 0.85em; color: #6b7280; margin: 0 0 10px 0; font-weight: 600;">Недавние комнаты:</p>
+                        <div id="recentChatsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    </div>
                 </div>
 
                 <div id="activeChatSection" class="card hidden">
@@ -444,6 +448,7 @@
         }
         function openChat(name) {
             if(!name) return;
+            saveToRecent(name);
             hideAll();
             
             document.getElementById('viewTitle').innerText = 'Чат: ' + name;
@@ -607,6 +612,45 @@
                 document.getElementById('netStatus').innerText = peers.length > 0 ? "ОНЛАЙН" : "ПОИСК...";
             }
         }, 2000);
+        // Сохраняем комнату в P2P-профиль пользователя
+        function saveToRecent(roomName) {
+            if (!user.is || !roomName) return;
+            // Сохраняем имя комнаты. Gun автоматически синхронизирует это с релеем
+            user.get('recentRooms').get(roomName).put({
+                name: roomName,
+                timestamp: Date.now()
+            });
+        }
+        // Загружаем и отрисовываем список кнопок
+        function loadRecentChats() {
+            const listEl = document.getElementById('recentChatsList');
+            if (!listEl || !user.is) return;
+            
+            listEl.innerHTML = ''; // Очищаем перед обновлением
+
+            user.get('recentRooms').map().on((data, name) => {
+                if (!data || !data.name) return;
+                
+                // Чтобы не дублировать кнопки в интерфейсе
+                if (document.getElementById('recent-' + name)) return;
+
+                const btn = document.createElement('button');
+                btn.id = 'recent-' + name;
+                btn.innerHTML = `<span style="color: #6366f1;">#</span> ${name}`;
+                btn.style.cssText = "background: white; color: #1f2937; text-align: left; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer; transition: all 0.2s; font-size: 0.95em;";
+                
+                // Эффект при наведении
+                btn.onmouseover = () => btn.style.borderColor = "#6366f1";
+                btn.onmouseout = () => btn.style.borderColor = "#e5e7eb";
+                
+                btn.onclick = () => {
+                    document.getElementById('targetRoom').value = name;
+                    openChat(name);
+                };
+                
+                listEl.appendChild(btn);
+            });
+        }
     </script>
 </body>
 </html>
