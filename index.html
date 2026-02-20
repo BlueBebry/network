@@ -630,27 +630,27 @@
             listEl.innerHTML = ''; 
 
             user.get('recentRooms').map().on((data, name) => {
+                // Если данных нет (удалено) или уже отрисовано — выходим
                 if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
-                // Создаем контейнер-сетку
                 const container = document.createElement('div');
                 container.id = 'recent-' + name;
-                // display: grid; grid-template-columns: 1fr auto; — это разделит строку на 
-                // растягивающуюся левую часть и компактную правую.
+                
+                // grid-template-columns: 1fr 50px; — Текст заберет всё место, крестик получит 50px справа
                 container.style.cssText = `
                     display: grid;
-                    grid-template-columns: 1fr auto;
+                    grid-template-columns: 1fr 50px;
                     align-items: center;
                     background: #f9fafb;
                     border: 1px solid #e5e7eb;
                     border-radius: 12px;
                     margin-bottom: 8px;
                     width: 100%;
-                    transition: all 0.2s;
                     overflow: hidden;
+                    transition: all 0.2s;
                 `;
 
-                // Кнопка входа
+                // Кнопка чата
                 const btn = document.createElement('button');
                 btn.innerHTML = `<span style="color: #6366f1; font-weight: bold; margin-right: 8px;">#</span>${name}`;
                 btn.style.cssText = `
@@ -660,47 +660,34 @@
                     text-align: left;
                     padding: 14px 16px;
                     cursor: pointer;
-                    font-size: 0.95em;
-                    font-weight: 500;
                     width: 100%;
+                    font-size: 0.95em;
+                    box-shadow: none;
                 `;
-                
                 btn.onclick = () => {
                     document.getElementById('targetRoom').value = name;
                     openChat(name);
                 };
 
-                // Кнопка-крестик
-                const delBtn = document.createElement('button');
+                // Кнопка удаления (крестик)
+                const delBtn = document.createElement('div'); // Используем div, чтобы не ловить стили кнопок
                 delBtn.innerHTML = '✕';
                 delBtn.style.cssText = `
-                    background: none !important;
-                    border: none !important;
-                    color: #d1d5db !important;
-                    cursor: pointer;
-                    padding: 0 20px;
-                    height: 100%;
-                    font-size: 1.1em;
-                    transition: color 0.2s;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    color: #d1d5db;
+                    cursor: pointer;
+                    height: 100%;
+                    font-size: 1.2em;
+                    transition: color 0.2s;
                 `;
-
-                // Визуальное оформление
-                container.onmouseover = () => {
-                    container.style.borderColor = "#6366f1";
-                    container.style.background = "#fff";
-                    delBtn.style.color = "#9ca3af";
-                };
-                container.onmouseout = () => {
-                    container.style.borderColor = "#e5e7eb";
-                    container.style.background = "#f9fafb";
-                    delBtn.style.color = "#d1d5db";
-                };
                 
-                delBtn.onmouseover = (e) => { e.target.style.setProperty('color', '#ef4444', 'important'); };
-
+                // Наведение
+                container.onmouseover = () => { container.style.borderColor = "#6366f1"; delBtn.style.color = "#9ca3af"; };
+                container.onmouseout = () => { container.style.borderColor = "#e5e7eb"; delBtn.style.color = "#d1d5db"; };
+                delBtn.onmouseover = (e) => { e.stopPropagation(); delBtn.style.color = "#ef4444"; };
+                
                 delBtn.onclick = (e) => {
                     e.stopPropagation();
                     removeRecentChat(name);
@@ -713,15 +700,11 @@
         }
         function removeRecentChat(roomName) {
             if (!user.is || !roomName) return;
-            
-            // В Gun.js удаление происходит путем записи null в узел
+            // Стираем данные в Gun
             user.get('recentRooms').get(roomName).put(null);
-            
-            // Удаляем элемент из интерфейса сразу
+            // Стираем из интерфейса
             const el = document.getElementById('recent-' + roomName);
             if (el) el.remove();
-            
-            console.log(`Комната ${roomName} удалена из списка`);
         }
     </script>
 </body>
