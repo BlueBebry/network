@@ -630,32 +630,79 @@
             listEl.innerHTML = ''; 
 
             user.get('recentRooms').map().on((data, name) => {
-                // Если данных нет (удалено) или кнопка уже отрисована — пропускаем
+                // Проверка на наличие данных и дубликаты
                 if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
-                // Создаем контейнер для кнопки чата и кнопки удаления
+                // Создаем контейнер-строку на всю ширину
                 const container = document.createElement('div');
                 container.id = 'recent-' + name;
-                container.style.cssText = "display: flex; gap: 5px; align-items: center;";
+                container.style.cssText = `
+                    display: flex; 
+                    align-items: center; 
+                    background: #f9fafb; 
+                    border: 1px solid #e5e7eb; 
+                    border-radius: 12px; 
+                    margin-bottom: 8px;
+                    transition: all 0.2s ease;
+                    width: 100%;
+                    overflow: hidden;
+                `;
 
-                // Основная кнопка входа в чат
+                // Кнопка входа (занимает всё пространство слева)
                 const btn = document.createElement('button');
-                btn.innerHTML = `<span style="color: #6366f1; margin-right: 5px;">#</span>${name}`;
-                btn.style.cssText = "flex-grow: 1; background: #f9fafb; color: #1f2937; text-align: left; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; cursor: pointer; font-size: 0.9em;";
+                btn.innerHTML = `<span style="color: #6366f1; font-weight: bold; margin-right: 8px;">#</span>${name}`;
+                btn.style.cssText = `
+                    flex-grow: 1; 
+                    background: none; 
+                    border: none; 
+                    color: #1f2937; 
+                    text-align: left; 
+                    padding: 14px 16px; 
+                    cursor: pointer; 
+                    font-size: 0.95em;
+                    font-weight: 500;
+                `;
+                
                 btn.onclick = () => {
                     document.getElementById('targetRoom').value = name;
                     openChat(name);
                 };
 
-                // Кнопка удаления (крестик)
+                // Кнопка удаления (прижата вправо)
                 const delBtn = document.createElement('button');
                 delBtn.innerHTML = '✕';
-                delBtn.style.cssText = "background: none; border: none; color: #9ca3af; cursor: pointer; padding: 5px 10px; font-size: 1.1em; transition: color 0.2s;";
-                delBtn.onmouseover = () => delBtn.style.color = "#ef4444";
-                delBtn.onmouseout = () => delBtn.style.color = "#9ca3af";
+                delBtn.style.cssText = `
+                    background: none; 
+                    border: none; 
+                    color: #d1d5db; 
+                    cursor: pointer; 
+                    padding: 0 16px; 
+                    height: 100%;
+                    font-size: 1.2em; 
+                    transition: color 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
                 
+                // Интерактив при наведении
+                container.onmouseover = () => {
+                    container.style.borderColor = "#6366f1";
+                    container.style.background = "#ffffff";
+                    delBtn.style.color = "#9ca3af";
+                };
+                container.onmouseout = () => {
+                    container.style.borderColor = "#e5e7eb";
+                    container.style.background = "#f9fafb";
+                    delBtn.style.color = "#d1d5db";
+                };
+                
+                delBtn.onmouseover = (e) => {
+                    e.target.style.color = "#ef4444";
+                };
+
                 delBtn.onclick = (e) => {
-                    e.stopPropagation(); // Чтобы не сработал вход в чат при нажатии на крестик
+                    e.stopPropagation();
                     removeRecentChat(name);
                 };
 
