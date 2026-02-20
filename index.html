@@ -632,27 +632,28 @@
             user.get('recentRooms').map().on((data, name) => {
                 if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
-                // Контейнер-плашка на всю ширину
+                // Контейнер на всю ширину
                 const container = document.createElement('div');
                 container.id = 'recent-' + name;
                 container.style.cssText = `
                     display: flex; 
+                    justify-content: space-between; /* РАЗВОДИТ ЭЛЕМЕНТЫ ПО КРАЯМ */
                     align-items: center; 
                     background: #f9fafb; 
                     border: 1px solid #e5e7eb; 
                     border-radius: 12px; 
                     margin-bottom: 8px;
                     width: 100%; 
+                    box-sizing: border-box; /* Чтобы padding не раздувал ширину */
                     overflow: hidden;
                     transition: all 0.2s;
                 `;
 
-                // Кнопка чата (Flex: 1 и width: 100% выталкивают всё остальное в край)
+                // Кнопка с текстом
                 const btn = document.createElement('button');
                 btn.innerHTML = `<span style="color: #6366f1; font-weight: bold; margin-right: 8px;">#</span>${name}`;
                 btn.style.cssText = `
-                    flex: 1;
-                    width: 100%;
+                    flex: 1; /* Позволяет кнопке занять всё свободное место */
                     background: none; 
                     border: none; 
                     color: #1f2937; 
@@ -661,6 +662,9 @@
                     cursor: pointer; 
                     font-size: 0.95em;
                     font-weight: 500;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 `;
                 
                 btn.onclick = () => {
@@ -668,7 +672,7 @@
                     openChat(name);
                 };
 
-                // Кнопка удаления (теперь будет строго справа)
+                // Кнопка-крестик (теперь точно будет справа)
                 const delBtn = document.createElement('button');
                 delBtn.innerHTML = '✕';
                 delBtn.style.cssText = `
@@ -676,17 +680,19 @@
                     border: none; 
                     color: #d1d5db; 
                     cursor: pointer; 
-                    padding: 0 20px; 
+                    padding: 0 16px; 
+                    min-width: 45px; /* Чтобы область клика была стабильной */
                     font-size: 1.1em;
-                    transition: all 0.2s;
+                    transition: color 0.2s;
                     display: flex;
                     align-items: center;
+                    justify-content: center;
                 `;
 
-                // Визуальные эффекты
+                // Визуальные эффекты при наведении
                 container.onmouseover = () => {
                     container.style.borderColor = "#6366f1";
-                    container.style.background = "#fff";
+                    container.style.background = "#ffffff";
                     delBtn.style.color = "#9ca3af";
                 };
                 container.onmouseout = () => {
@@ -694,7 +700,6 @@
                     container.style.background = "#f9fafb";
                     delBtn.style.color = "#d1d5db";
                 };
-                
                 delBtn.onmouseover = (e) => { e.target.style.color = "#ef4444"; };
 
                 delBtn.onclick = (e) => {
