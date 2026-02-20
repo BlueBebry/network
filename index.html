@@ -630,25 +630,24 @@
             listEl.innerHTML = ''; 
 
             user.get('recentRooms').map().on((data, name) => {
-                // Проверка на наличие данных и дубликаты
                 if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
-                // Создаем контейнер-строку на всю ширину
+                // Главный контейнер на всю ширину
                 const container = document.createElement('div');
                 container.id = 'recent-' + name;
                 container.style.cssText = `
                     display: flex; 
+                    justify-content: space-between; 
                     align-items: center; 
                     background: #f9fafb; 
                     border: 1px solid #e5e7eb; 
                     border-radius: 12px; 
                     margin-bottom: 8px;
-                    transition: all 0.2s ease;
                     width: 100%;
-                    overflow: hidden;
+                    transition: all 0.2s;
                 `;
 
-                // Кнопка входа (занимает всё пространство слева)
+                // Кнопка с названием комнаты (растягивается)
                 const btn = document.createElement('button');
                 btn.innerHTML = `<span style="color: #6366f1; font-weight: bold; margin-right: 8px;">#</span>${name}`;
                 btn.style.cssText = `
@@ -660,15 +659,13 @@
                     padding: 14px 16px; 
                     cursor: pointer; 
                     font-size: 0.95em;
-                    font-weight: 500;
                 `;
-                
                 btn.onclick = () => {
                     document.getElementById('targetRoom').value = name;
                     openChat(name);
                 };
 
-                // Кнопка удаления (прижата вправо)
+                // Кнопка удаления (всегда справа)
                 const delBtn = document.createElement('button');
                 delBtn.innerHTML = '✕';
                 delBtn.style.cssText = `
@@ -677,18 +674,14 @@
                     color: #d1d5db; 
                     cursor: pointer; 
                     padding: 0 16px; 
-                    height: 100%;
-                    font-size: 1.2em; 
+                    font-size: 1.1em;
                     transition: color 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
                 `;
-                
+
                 // Интерактив при наведении
                 container.onmouseover = () => {
                     container.style.borderColor = "#6366f1";
-                    container.style.background = "#ffffff";
+                    container.style.background = "#fff";
                     delBtn.style.color = "#9ca3af";
                 };
                 container.onmouseout = () => {
@@ -696,10 +689,8 @@
                     container.style.background = "#f9fafb";
                     delBtn.style.color = "#d1d5db";
                 };
-                
-                delBtn.onmouseover = (e) => {
-                    e.target.style.color = "#ef4444";
-                };
+                delBtn.onmouseover = (e) => e.target.style.color = "#ef4444";
+                delBtn.onmouseout = (e) => e.target.style.color = "#9ca3af";
 
                 delBtn.onclick = (e) => {
                     e.stopPropagation();
