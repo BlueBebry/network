@@ -632,26 +632,26 @@
             user.get('recentRooms').map().on((data, name) => {
                 if (!data || !data.name || document.getElementById('recent-' + name)) return;
 
-                // Главный контейнер на всю ширину
+                // 1. Контейнер на всю ширину карточки
                 const container = document.createElement('div');
                 container.id = 'recent-' + name;
                 container.style.cssText = `
                     display: flex; 
-                    justify-content: space-between; 
                     align-items: center; 
                     background: #f9fafb; 
                     border: 1px solid #e5e7eb; 
                     border-radius: 12px; 
                     margin-bottom: 8px;
-                    width: 100%;
+                    width: 100%; 
+                    overflow: hidden;
                     transition: all 0.2s;
                 `;
 
-                // Кнопка с названием комнаты (растягивается)
+                // 2. Кнопка с текстом (flex: 1 заставляет её растянуться до упора вправо)
                 const btn = document.createElement('button');
                 btn.innerHTML = `<span style="color: #6366f1; font-weight: bold; margin-right: 8px;">#</span>${name}`;
                 btn.style.cssText = `
-                    flex-grow: 1; 
+                    flex: 1; 
                     background: none; 
                     border: none; 
                     color: #1f2937; 
@@ -659,13 +659,15 @@
                     padding: 14px 16px; 
                     cursor: pointer; 
                     font-size: 0.95em;
+                    font-weight: 500;
                 `;
+                
                 btn.onclick = () => {
                     document.getElementById('targetRoom').value = name;
                     openChat(name);
                 };
 
-                // Кнопка удаления (всегда справа)
+                // 3. Кнопка-крестик (теперь она будет прижата к самому краю)
                 const delBtn = document.createElement('button');
                 delBtn.innerHTML = '✕';
                 delBtn.style.cssText = `
@@ -673,12 +675,14 @@
                     border: none; 
                     color: #d1d5db; 
                     cursor: pointer; 
-                    padding: 0 16px; 
+                    padding: 0 20px; 
                     font-size: 1.1em;
-                    transition: color 0.2s;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
                 `;
 
-                // Интерактив при наведении
+                // Интерактив (подсветка всей плашки)
                 container.onmouseover = () => {
                     container.style.borderColor = "#6366f1";
                     container.style.background = "#fff";
@@ -689,8 +693,8 @@
                     container.style.background = "#f9fafb";
                     delBtn.style.color = "#d1d5db";
                 };
-                delBtn.onmouseover = (e) => e.target.style.color = "#ef4444";
-                delBtn.onmouseout = (e) => e.target.style.color = "#9ca3af";
+                
+                delBtn.onmouseover = (e) => { e.target.style.color = "#ef4444"; };
 
                 delBtn.onclick = (e) => {
                     e.stopPropagation();
